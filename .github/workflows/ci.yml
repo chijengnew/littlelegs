@@ -25,7 +25,7 @@ jobs:
       TEST_MIGRATION_DATABASE_URL: mysql+aiomysql://ll_migrate:devpass@127.0.0.1:3306/littlelegs_test
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - name: Install
         run: uv sync --locked --extra dev
       - name: Create DB users (app 無 DDL；migration 獨立身分)
