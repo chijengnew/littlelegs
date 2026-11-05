@@ -1,0 +1,16 @@
+﻿file,original_name,title,provider,source_url,downloaded_at,data_date,format,encoding,crs,records,role,notes
+tainan_attractions.json,Tainan_City_Tourist_Attractions.json,臺南市觀光景點,臺南市政府,https://data.gov.tw/dataset/6183,2026-10-16,,JSON,UTF-8,WGS84,565,supplement,全國庫沒有的約 111 筆需新增
+taoyuan_attractions.xml,桃園市景點資料(中).xml,桃園市景點資料（中文）,桃園市政府,https://data.gov.tw/dataset/26352,2026-10-16,,XML,UTF-8,WGS84,337,supplement,全國庫沒有的約 80 筆需新增；座標欄位為 Px（經度）、Py（緯度）
+hsinchu_city_attractions.csv,Hsinchu-City-Tourist-Attractions.csv,新竹市觀光景點,新竹市政府,https://data.gov.tw/dataset/67758,2026-10-16,,CSV,UTF-8 (BOM),無座標,58,supplement,全國庫沒有的約 23 筆需新增；需用地址補座標
+tw_museums.xls,emap_H.xls,全國博物館,文化部,https://data.gov.tw/dataset/6242,2026-10-16,,XLS,—,WGS84,144,supplement,全國庫沒有的約 24 筆需新增；13 筆無座標；簡介與開放時間欄位全空
+tw_leisure_agri_areas.json,Leisure-Agriculture-Areas.json,休閒農業區,農業部,https://data.gov.tw/dataset/6406,2026-10-16,,JSON,UTF-8,WGS84,115,supplement,全國庫沒有的約 24 筆需新增
+tw_tourism_factories.csv,Tourism-Factory.csv,觀光工廠,經濟部,https://data.gov.tw/dataset/6848,2026-10-16,,CSV,UTF-8 (BOM),無座標,158,supplement,全國庫沒有的約 17 筆需新增；排除名稱含「休館」者；需用地址補座標
+tw_env_edu_sites.csv,eedu_s_01.csv,環境教育設施場所,環境部,https://data.gov.tw/dataset/6372,2026-10-16,,CSV,UTF-8,無座標,272,standalone,含焚化廠、污水處理廠等非親子場所，需篩選；以 valid_date 排除認證過期者（目前 4 筆）
+tw_family_activities.json,family_activities.json,藝文活動,文化部,https://data.gov.tw/dataset/6014,2026-10-16,,JSON,UTF-8,WGS84,66,standalone,活動資料，需定期重新下載；混有非親子活動需篩選；242 個場次中 223 個有座標
+taipei_family_toilets.csv,臺北市親子友善廁所點位資訊.csv,臺北市親子友善廁所點位資訊,臺北市政府,https://data.gov.tw/dataset/172110,2026-10-16,,CSV,CP950 (Big5),WGS84,393,standalone,含尿布台、兒童座椅數量與親子友善評鑑
+taipei_parent_child_centers.csv,臺北市嬰幼兒照顧服務-親子館.csv,臺北市親子館,臺北市政府,https://data.gov.tw/dataset/121336,2026-10-16,,CSV,UTF-8 (BOM),無座標,13,standalone,需用地址補座標
+taipei_park_facility.json,TaipeiParkFacility_Arcade.json,臺北市公園遊具設施,臺北市政府,https://data.gov.tw/dataset/136476,2026-10-16,,JSON,UTF-8,TWD97,972,standalone,972 列中僅 520 列不重複，需去重；座標需轉 WGS84
+taichung_inclusive_playgrounds.csv,共融式遊戲場.csv,臺中市共融式遊戲場,臺中市政府,https://data.gov.tw/dataset/146631,2026-10-16,,CSV,CP950 (Big5)，檔頭另有 2 個 UTF-8 BOM,WGS84,104,standalone,117 列中後 13 列為空白列；讀檔前先去掉檔頭 BOM
+taoyuan_themed_playgrounds.csv,特色遊戲場.csv,桃園市特色遊戲場,桃園市政府,https://data.gov.tw/dataset/148726,2026-10-16,,CSV,UTF-8 (BOM),無座標,45,standalone,需用地址補座標
+chiayi_city_nursing_rooms.csv,嘉義市公共場所及職場哺集乳室地點-1150803.csv,嘉義市公共場所及職場哺集乳室地點,嘉義市政府,https://data.gov.tw/dataset/52511,2026-10-16,2026-08-03,CSV,UTF-8 (BOM),WGS84,91,standalone,類別「自願設置」中部分學校僅供校內人員使用，需篩選
+taipei_attractions.json,taipei_attractions.json,臺北旅遊網景點,臺北市政府,https://www.travel.taipei/open-api/zh-tw/Attractions/All,2026-10-16,,JSON,UTF-8,WGS84,470,supplement,全國庫沒有的約 61 筆需新增；其餘 409 筆用來補親子標籤；含 39 筆新北與基隆景點，判斷縣市用 zipcode 或 address

@@ -1,0 +1,33 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadProdParameters",
+      "Effect": "Allow",
+      "Action": "ssm:GetParametersByPath",
+      "Resource": "arn:aws:ssm:ap-east-2:<ACCOUNT_ID>:parameter/littlelegs/prod"
+    },
+    {
+      "Sid": "DenyParametersOutsideProject",
+      "Effect": "Deny",
+      "Action": "ssm:GetParameter*",
+      "NotResource": [
+        "arn:aws:ssm:ap-east-2:<ACCOUNT_ID>:parameter/littlelegs/prod",
+        "arn:aws:ssm:ap-east-2:<ACCOUNT_ID>:parameter/littlelegs/prod/*"
+      ]
+    },
+    {
+      "Sid": "DeletionIntentObjects",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": "arn:aws:s3:::<INTENT_BUCKET>/littlelegs/deletion-intents/*"
+    },
+    {
+      "Sid": "ListDeletionIntents",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::<INTENT_BUCKET>",
+      "Condition": { "StringLike": { "s3:prefix": ["littlelegs/deletion-intents/*"] } }
+    }
+  ]
+}

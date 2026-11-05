@@ -1,0 +1,73 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -proot" --health-interval=5s --health-timeout=3s --health-retries=20
+    env:
+      APP_ENV: test
+      APP_CHECK_ENFORCE: "false"
+      TEST_DATABASE_URL: mysql+aiomysql://ll_app:devpass@127.0.0.1:3306/littlelegs_test
+      TEST_MIGRATION_DATABASE_URL: mysql+aiomysql://ll_migrate:devpass@127.0.0.1:3306/littlelegs_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync --locked --extra dev
+      - name: Create DB users (app 無 DDL；migration 獨立身分)
+        run: |
+          mysql -h127.0.0.1 -uroot -proot -e "
+            CREATE DATABASE littlelegs_test CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+            CREATE USER 'll_app'@'%' IDENTIFIED BY 'devpass';
+            CREATE USER 'll_migrate'@'%' IDENTIFIED BY 'devpass';
+            GRANT SELECT,INSERT,UPDATE,DELETE ON littlelegs_test.* TO 'll_app'@'%';
+            GRANT ALL ON littlelegs_test.* TO 'll_migrate'@'%';"
+      - run: uv run ruff check .
+      - run: uv run ruff format --check app etl scripts tests main.py
+      - run: uv run mypy app etl scripts main.py
+      - run: uv run pytest -q
+      - name: OpenAPI contract
+        run: uv run python -m scripts.export_openapi > /tmp/openapi.json && diff -u openapi.json /tmp/openapi.json
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:auth
+      - run: npm run test:unit
+      - name: OpenAPI 型別同步（由 backend/openapi.json 重新產生，與提交版本不同即失敗）
+        run: npm run check:api
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7

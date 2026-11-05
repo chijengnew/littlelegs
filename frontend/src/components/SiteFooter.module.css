@@ -1,0 +1,24 @@
+.footer {
+  max-width: 1200px;
+  margin: 32px auto 0;
+  padding: 16px 16px calc(96px + env(safe-area-inset-bottom));
+  color: var(--text-2);
+  font-size: 13px;
+  border-top: 1px solid var(--divider);
+}
+.footer p {
+  margin: 4px 0;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.links a {
+  color: var(--text-2);
+}
+@media (min-width: 900px) {
+  .footer {
+    padding-bottom: 32px;
+  }
+}

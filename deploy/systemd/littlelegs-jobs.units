@@ -1,0 +1,75 @@
+# ── littlelegs-deletion.service ──
+[Unit]
+Description=Littlelegs 刪除意圖處理（每分鐘）
+OnFailure=littlelegs-alert@%n.service
+[Service]
+Type=oneshot
+User=littlelegs
+WorkingDirectory=/opt/littlelegs/backend
+EnvironmentFile=/etc/littlelegs/api.env
+ExecStart=/opt/littlelegs/venv/bin/python -m scripts.with_ssm_env --path ${SSM_PARAMETER_PATH} -- /opt/littlelegs/venv/bin/python -m scripts.deletion_worker run
+TimeoutStartSec=50
+
+# ── littlelegs-deletion.timer ──
+[Unit]
+Description=每分鐘處理刪除意圖
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+Persistent=true
+[Install]
+WantedBy=timers.target
+
+# ── littlelegs-reconcile.service ──
+[Unit]
+Description=Littlelegs 刪除意圖對帳（每日；未完成超過 15 分鐘告警）
+OnFailure=littlelegs-alert@%n.service
+[Service]
+Type=oneshot
+User=littlelegs
+WorkingDirectory=/opt/littlelegs/backend
+EnvironmentFile=/etc/littlelegs/api.env
+ExecStart=/opt/littlelegs/venv/bin/python -m scripts.with_ssm_env --path ${SSM_PARAMETER_PATH} -- /opt/littlelegs/venv/bin/python -m scripts.deletion_worker reconcile
+
+# ── littlelegs-reconcile.timer ──
+[Timer]
+OnCalendar=*-*-* 03:10:00
+Persistent=true
+[Install]
+WantedBy=timers.target
+
+# ── littlelegs-purge-unverified.service ──
+[Unit]
+Description=Littlelegs 刪除註冊滿 24 小時仍未驗證 Email 的註冊（Firebase 帳號）
+OnFailure=littlelegs-alert@%n.service
+[Service]
+Type=oneshot
+User=littlelegs
+WorkingDirectory=/opt/littlelegs/backend
+EnvironmentFile=/etc/littlelegs/api.env
+ExecStart=/opt/littlelegs/venv/bin/python -m scripts.with_ssm_env --path ${SSM_PARAMETER_PATH} -- /opt/littlelegs/venv/bin/python -m scripts.deletion_worker purge-unverified
+TimeoutStartSec=600
+
+# ── littlelegs-purge-unverified.timer ──
+[Timer]
+OnCalendar=hourly
+Persistent=true
+[Install]
+WantedBy=timers.target
+
+# ── littlelegs-maintenance.service ──
+[Unit]
+Description=Littlelegs 清理過期限流計數與操作紀錄
+[Service]
+Type=oneshot
+User=littlelegs
+WorkingDirectory=/opt/littlelegs/backend
+EnvironmentFile=/etc/littlelegs/api.env
+ExecStart=/opt/littlelegs/venv/bin/python -m scripts.with_ssm_env --path ${SSM_PARAMETER_PATH} -- /opt/littlelegs/venv/bin/python -m scripts.maintenance
+
+# ── littlelegs-maintenance.timer ──
+[Timer]
+OnCalendar=hourly
+Persistent=true
+[Install]
+WantedBy=timers.target

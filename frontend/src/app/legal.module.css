@@ -1,0 +1,19 @@
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 12px 16px 0;
+  display: grid;
+  gap: 12px;
+}
+.wrap h2 {
+  font-size: 16px;
+  margin: 18px 0 6px;
+}
+.wrap p {
+  margin: 0;
+  color: var(--text-2);
+}
+.title {
+  font-size: 22px;
+  font-weight: 800;
+}

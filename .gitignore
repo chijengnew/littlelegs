@@ -1,0 +1,45 @@
+# 機密與本機設定
+.env
+.env.*
+*.env
+!.env.example
+*.pem
+*.key
+.aws/
+
+# Claude Code 本機設定
+.claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# 系統檔
+.DS_Store
+
+# Specific docs
+.docs
+
+# Local project documentation (keep on disk; do not commit)
+/README.md
+/frontend/README.md
+/docs/Littlelegs-決策紀錄.docx
+/docs/littlelegs-instructions-final.md
+
+# 匯出的使用者回饋（可能含個人資料）
+feedback*.csv
+
+# Review work files and generated reports (keep on disk; do not commit)
+/data/review/place_id_review.csv
+/data/review/place_id_review.csv.bak
+/data/review/place_identity_conflicts.json
+/data/review/exclusions.csv
+/data/review/dedup_review.csv
+/data/review/facility_unattached.csv

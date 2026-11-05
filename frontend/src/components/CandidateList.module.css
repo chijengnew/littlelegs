@@ -1,0 +1,102 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.item,
+.itemChecked {
+  display: flex;
+  gap: 12px;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  border: 2px solid transparent;
+  transition: border-color 0.12s;
+}
+.itemChecked {
+  border-color: var(--blue);
+  background: #f8fbff;
+}
+
+.pick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.pick[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox {
+  width: 26px;
+  height: 26px;
+  accent-color: var(--blue);
+  cursor: inherit;
+  margin: 0;
+}
+
+.rank {
+  font-size: 12px;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.distance {
+  flex: 0 0 auto;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.address {
+  margin: 2px 0 8px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reasons {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.foot {
+  margin-top: 8px;
+}
+
+.detailLink {
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -1,0 +1,66 @@
+.bone {
+  display: block;
+  border-radius: 6px;
+  background: var(--divider);
+  opacity: 0;
+  animation:
+    appear 150ms ease-out 300ms forwards,
+    pulse 1.4s ease-in-out 450ms infinite;
+}
+
+.card {
+  composes: bone;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+.card > .bone {
+  animation-name: appear;
+  animation-iteration-count: 1;
+}
+
+.line {
+  composes: bone;
+  height: 12px;
+}
+
+.title {
+  composes: bone;
+  height: 18px;
+  width: 55%;
+}
+
+.appear {
+  min-width: 0;
+  animation: appear 150ms ease-out;
+}
+
+.fadeIn {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  animation: appear 150ms ease-out;
+}
+
+@keyframes appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone,
+  .card,
+  .appear,
+  .fadeIn {
+    animation: none;
+    opacity: 1;
+  }
+}

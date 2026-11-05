@@ -1,0 +1,19 @@
+.form {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 140px;
+  padding-block: 10px;
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}

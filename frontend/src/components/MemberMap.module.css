@@ -1,0 +1,104 @@
+.wrap {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: var(--card);
+}
+
+.canvas {
+  position: relative;
+  height: 260px;
+  background: var(--blue-soft);
+}
+
+.status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.status strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.foot {
+  display: grid;
+  gap: 6px;
+  padding: 10px 14px 12px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pinStart,
+.pinEnd,
+.pinStartEnd,
+.pinStop,
+.pinCandidate,
+.pinSelected {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  font: 700 12px/1 var(--font);
+  color: #fff;
+  white-space: nowrap;
+}
+.pinStart,
+.pinStartEnd {
+  background: var(--green);
+}
+.pinEnd {
+  background: var(--red);
+}
+.pinStop,
+.pinSelected {
+  background: var(--blue);
+}
+.pinCandidate {
+  min-width: 14px;
+  height: 14px;
+  padding: 0;
+  background: #8a8d91;
+}
+.pinSelected {
+  min-width: 18px;
+  height: 18px;
+  padding: 0;
+}
+
+.legend .pinStart,
+.legend .pinEnd,
+.legend .pinStartEnd,
+.legend .pinStop,
+.legend .pinCandidate,
+.legend .pinSelected {
+  min-width: 12px;
+  height: 12px;
+  padding: 0;
+  border-width: 1px;
+  box-shadow: none;
+}

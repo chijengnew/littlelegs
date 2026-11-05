@@ -1,0 +1,160 @@
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
+.grid3 {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+.grid3 > :first-child {
+  grid-column: 1 / -1;
+}
+@media (min-width: 640px) {
+  .grid3 {
+    grid-template-columns: 1.4fr 1fr 1fr;
+  }
+  .grid3 > :first-child {
+    grid-column: auto;
+  }
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+
+.children {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.child {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 150px;
+}
+
+.windows {
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 640px) {
+  .windows {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.window {
+  min-width: 0;
+}
+
+.hr {
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: 14px 0;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+.switchTitle {
+  display: block;
+  font-weight: 600;
+}
+
+.switch {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s;
+}
+.switch:checked {
+  background: var(--blue);
+}
+.switch:checked::after {
+  transform: translateX(20px);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.submitBar {
+  display: grid;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.privacy {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+@media (max-width: 899px) {
+  .submitBar {
+    position: sticky;
+    bottom: 0;
+    margin: 0 -16px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+    z-index: 20;
+  }
+}

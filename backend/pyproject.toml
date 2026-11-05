@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "littlelegs-backend"
+version = "0.1.0"
+description = "Littlelegs 親子出遊決策工具後端（FastAPI）"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "sqlalchemy[asyncio]",
+    "aiomysql",
+    "pymysql<1.2",
+    "alembic",
+    "httpx",
+    "opencc",
+    "anyio",
+    "firebase-admin",
+    "boto3",
+    "sentry-sdk[fastapi]",
+]
+
+[project.optional-dependencies]
+etl = ["pyproj", "xlrd"]
+dev = ["pytest", "asgi-lifespan", "ruff", "mypy", "pyproj", "xlrd"]
+
+[tool.setuptools.packages.find]
+include = ["app*", "etl*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: 需要 MySQL（設定 TEST_DATABASE_URL）"]
+filterwarnings = ["ignore::DeprecationWarning:firebase_admin.*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"migrations/versions/*" = ["E501"]
+"scripts/*" = ["ASYNC230", "ASYNC240"]
+"etl/*" = ["ASYNC230", "ASYNC240"]
+"app/security/firebase.py" = ["ASYNC109"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+check_untyped_defs = false
