@@ -20,9 +20,9 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 
 from app.config import get_settings
-from app.db.models import Favorite, History, User
+from app.db.models import User
 from app.main import default_state_factory
-from app.services.deletion import process_intent
+from app.services.deletion import RECORD_MODELS, process_intent
 from app.services.registration import purge_expired
 
 from ._common import setup_logging
@@ -71,7 +71,7 @@ async def reconcile() -> int:
                 if it.kind == "account":
                     left = (await s.execute(select(User.id).where(User.id == uuid.UUID(it.user_id)))).scalar()
                 else:
-                    model = History if it.kind == "history" else Favorite
+                    model = RECORD_MODELS[it.kind]
                     left = (await s.execute(select(model.id).where(model.id == uuid.UUID(it.target_id)))).scalar()
             if left is not None:
                 problems += 1

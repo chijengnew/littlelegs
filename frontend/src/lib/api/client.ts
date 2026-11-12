@@ -39,6 +39,9 @@ export function setTokenProviders(p: Partial<typeof providers>): void {
 }
 
 const APP_CHECK_PATHS = [/^\/v1\/trips\//, /^\/v1\/endpoints\//, /\/recheck$/, /^\/v1\/feedback$/];
+const APP_CHECK_POSTS = [/^\/v1\/check-ins$/];
+const needsAppCheck = (method: string, path: string) =>
+  APP_CHECK_PATHS.some((re) => re.test(path)) || (method === "POST" && APP_CHECK_POSTS.some((re) => re.test(path)));
 const retries = new WeakMap<Request, { request: Request; identity: string | null }>();
 
 const authMiddleware: Middleware = {
@@ -50,7 +53,7 @@ const authMiddleware: Middleware = {
       const token = await providers.idToken();
       if (token) request.headers.set("Authorization", `Bearer ${token}`);
     }
-    if (providers.appCheck && APP_CHECK_PATHS.some((re) => re.test(schemaPath))) {
+    if (providers.appCheck && needsAppCheck(request.method, schemaPath)) {
       let token: string | null;
       try {
         token = await providers.appCheck();

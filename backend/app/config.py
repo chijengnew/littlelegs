@@ -22,6 +22,19 @@ def _int(name: str, default: int) -> int:
     return default if v is None or not v.strip() else int(v)
 
 
+def _float(name: str, default: float) -> float:
+    v = os.environ.get(name)
+    return default if v is None or not v.strip() else float(v)
+
+
+@dataclass(frozen=True)
+class Stamping:
+    """定位核對門檻（初始測試值，依試點實測再調整；不是防作弊保證）。"""
+
+    max_accuracy_m: float = 100.0
+    max_distance_m: float = 150.0
+
+
 @dataclass(frozen=True)
 class Limits:
     """初始應用限額（專案初值，非 Google 官方配額或費用保證）。"""
@@ -31,6 +44,7 @@ class Limits:
     uid_member_paid_per_min: int = 10
     ip_endpoint_select_per_min: int = 20
     ip_feedback_per_min: int = 3
+    uid_stamp_per_min: int = 10
     daily_google_requests: int = 1000
     daily_autocomplete: int = 500
     daily_matrix_elements: int = 2500
@@ -64,6 +78,7 @@ class Settings:
     deletion_intent_prefix: str = "littlelegs/deletion-intents/"
     deletion_intent_local_dir: str = "/tmp/littlelegs-intents"
     limits: Limits = field(default_factory=Limits)
+    stamping: Stamping = field(default_factory=Stamping)
 
     @property
     def is_production(self) -> bool:
@@ -78,6 +93,7 @@ def get_settings() -> Settings:
         uid_member_paid_per_min=_int("LIMIT_UID_MEMBER_PAID_PER_MIN", 10),
         ip_endpoint_select_per_min=_int("LIMIT_IP_ENDPOINT_SELECT_PER_MIN", 20),
         ip_feedback_per_min=_int("LIMIT_IP_FEEDBACK_PER_MIN", 3),
+        uid_stamp_per_min=_int("LIMIT_UID_STAMP_PER_MIN", 10),
         daily_google_requests=_int("LIMIT_DAILY_GOOGLE_REQUESTS", 1000),
         daily_autocomplete=_int("LIMIT_DAILY_AUTOCOMPLETE", 500),
         daily_matrix_elements=_int("LIMIT_DAILY_MATRIX_ELEMENTS", 2500),
@@ -104,6 +120,10 @@ def get_settings() -> Settings:
         deletion_intent_prefix=os.environ.get("DELETION_INTENT_PREFIX", "littlelegs/deletion-intents/"),
         deletion_intent_local_dir=os.environ.get("DELETION_INTENT_LOCAL_DIR", "/tmp/littlelegs-intents"),
         limits=lim,
+        stamping=Stamping(
+            max_accuracy_m=_float("STAMP_MAX_ACCURACY_M", 100.0),
+            max_distance_m=_float("STAMP_MAX_DISTANCE_M", 150.0),
+        ),
     )
 
 

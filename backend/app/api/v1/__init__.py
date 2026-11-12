@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.problems import common_errors
-from app.api.v1 import account, endpoints, favorites, feedback, histories, trips
+from app.api.v1 import account, check_ins, endpoints, favorites, feedback, histories, missions, trips
 
 router = APIRouter(prefix="/v1")
 for r, app_check, conflict_example, member_only in (
@@ -12,6 +12,8 @@ for r, app_check, conflict_example, member_only in (
     (histories.router, False, ("QUERY_CONDITIONS_CONFLICT", "同一 query_id 已有不同條件的歷史"), True),
     (favorites.router, False, ("IDEMPOTENCY_CONFLICT", "同一操作識別碼的內容不同"), True),
     (account.router, False, ("USER_CREATE_CONFLICT", "請重試"), False),
+    (check_ins.router, False, ("IDEMPOTENCY_CONFLICT", "同一操作識別碼的內容不同"), True),
+    (missions.router, False, ("USER_CREATE_CONFLICT", "請重試"), True),
 ):
     router.include_router(
         r, responses=common_errors(app_check=app_check, conflict_example=conflict_example, member_only=member_only)

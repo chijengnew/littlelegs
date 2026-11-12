@@ -4,6 +4,44 @@
  */
 
 export interface paths {
+    "/v1/check-ins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 本人的到訪紀錄（新到舊）與數量 */
+        get: operations["list_check_ins_v1_check_ins_get"];
+        put?: never;
+        /**
+         * 蓋章：建立手動紀錄、建立定位核對，或把原手動紀錄升級為定位核對（不降級）
+         * @description 定位核對的座標與精確度只在本次請求比較，不保存。同一 Idempotency-Key 重送時，回傳與第一次相同的狀態碼與 outcome。可能的錯誤代碼：LOCATION_INACCURATE、LOCATION_TOO_FAR、PLACE_NOT_STAMPABLE、PLACE_NO_COORDINATES（422）；PLACE_REMOVED、IDEMPOTENCY_CONFLICT、OPERATION_CANCELLED、OPERATION_EXPIRED、KEY_TIME_INVALID（409）；EMAIL_NOT_VERIFIED、APP_CHECK_REQUIRED、APP_CHECK_FAILED、ACCOUNT_DELETING（403）；RATE_LIMITED（429）。
+         */
+        post: operations["create_check_in_v1_check_ins_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/check-ins/{check_in_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 刪除單筆到訪紀錄；任務進度隨之重算，指向此紀錄的舊蓋章操作永久失效 */
+        delete: operations["delete_check_in_v1_check_ins__check_in_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/deletions/{operation_id}": {
         parameters: {
             query?: never;
@@ -246,6 +284,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/missions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 任務進度與已解鎖徽章：只計定位核對成功、未下架的不重複景點；手動紀錄不計入 */
+        get: operations["list_missions_v1_missions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/places/{place_id}": {
         parameters: {
             query?: never;
@@ -468,6 +523,83 @@ export interface components {
             conditions: components["schemas"]["Conditions"];
             /** Query Id */
             query_id: string;
+        };
+        /** CheckInCounts */
+        CheckInCounts: {
+            /** Location */
+            location: number;
+            /** Manual */
+            manual: number;
+            /** Total */
+            total: number;
+        };
+        /** CheckInCreateResponse */
+        CheckInCreateResponse: {
+            check_in: components["schemas"]["CheckInOut"];
+            /**
+             * Outcome
+             * @description created＝新建立；upgraded＝原手動紀錄升級為定位核對；existing＝已有紀錄，未改動
+             * @enum {string}
+             */
+            outcome: "created" | "upgraded" | "existing";
+        };
+        /** CheckInIn */
+        CheckInIn: {
+            location?: components["schemas"]["LocationIn"] | null;
+            /** Place Id */
+            place_id: string;
+            /**
+             * Verification Method
+             * @enum {string}
+             */
+            verification_method: "location" | "manual";
+        };
+        /** CheckInList */
+        CheckInList: {
+            /** @description 本人全部到訪紀錄的數量（不受分頁或 place_id 篩選影響） */
+            counts: components["schemas"]["CheckInCounts"];
+            /** Items */
+            items: components["schemas"]["CheckInOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** CheckInOut */
+        CheckInOut: {
+            /** Id */
+            id: string;
+            place: components["schemas"]["CheckInPlace"];
+            /**
+             * Verification Method
+             * @description location＝定位核對；manual＝手動紀錄（不算定位成功，不計入任務）
+             * @enum {string}
+             */
+            verification_method: "location" | "manual";
+            /**
+             * Verified At
+             * @description 首次定位核對成功的時間（UTC，ISO 8601）；手動紀錄為 null。定位核對不是不可偽造的到場證明
+             */
+            verified_at: string | null;
+            /**
+             * Visited At
+             * @description 首次建立紀錄的時間（UTC，ISO 8601）；不是經核實的實際到訪時間
+             */
+            visited_at: string;
+        };
+        /** CheckInPlace */
+        CheckInPlace: {
+            /** City */
+            city: string | null;
+            /** Name */
+            name: string;
+            /** Place Id */
+            place_id: string;
+            /** Primary Type */
+            primary_type: string | null;
+            /**
+             * Removed
+             * @description 景點已下架：紀錄保留供本人查看，不再新增到訪，也不計入任務
+             */
+            removed: boolean;
         };
         /** Coded */
         Coded: {
@@ -914,6 +1046,15 @@ export interface components {
              */
             source: "open_data" | "google" | "device";
         };
+        /** LocationIn */
+        LocationIn: {
+            /** Accuracy M */
+            accuracy_m: number;
+            /** Lat */
+            lat: number;
+            /** Lng */
+            lng: number;
+        };
         /** LodgingItem */
         LodgingItem: {
             /** Address */
@@ -966,6 +1107,43 @@ export interface components {
             locale: string;
             /** Status */
             status: string;
+        };
+        /** MissionList */
+        MissionList: {
+            /**
+             * Counted Places
+             * @description 目前計入任務的不重複景點數：定位核對成功且景點未下架
+             */
+            counted_places: number;
+            /** Items */
+            items: components["schemas"]["MissionOut"][];
+        };
+        /** MissionOut */
+        MissionOut: {
+            /**
+             * Code
+             * @description 任務代碼；名稱與說明由前端翻譯檔對應
+             */
+            code: string;
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "distinct_places";
+            /**
+             * Progress
+             * @description 目前符合條件的不重複景點數（可能大於門檻）
+             */
+            progress: number;
+            /** Threshold */
+            threshold: number;
+            /**
+             * Types
+             * @description 限定的主要類型代碼；空陣列表示不限類型
+             */
+            types: string[];
+            /** Unlocked */
+            unlocked: boolean;
         };
         /** PlaceDetail */
         PlaceDetail: {
@@ -1601,6 +1779,577 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_check_ins_v1_check_ins_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+                /** @description 只看這個景點的本人紀錄（景點詳情顯示是否已蓋章） */
+                place_id?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInList"];
+                };
+            };
+            /** @description 登入憑證無效、過期或需要重新登入 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_TOKEN_EXPIRED",
+                     *       "detail": "登入憑證已過期",
+                     *       "status": 401,
+                     *       "title": "Unauthorized",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-token-expired"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 拒絕存取：App Check 驗證失敗、Email 尚未驗證（會員功能）、帳號刪除中，或無權使用此起訖點 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "EMAIL_NOT_VERIFIED",
+                     *       "detail": "請先完成 Email 驗證才能使用會員功能",
+                     *       "status": 403,
+                     *       "title": "Forbidden",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/email-not-verified"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 與目前狀態衝突：例如出發時間已過、同一識別碼的內容不同、行程已在別處更新 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "IDEMPOTENCY_CONFLICT",
+                     *       "detail": "同一操作識別碼的內容不同",
+                     *       "status": 409,
+                     *       "title": "Conflict",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/idempotency-conflict"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 輸入欄位不合法；`errors` 列出欄位位置與原因 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "VALIDATION_FAILED",
+                     *       "detail": "輸入欄位不合法",
+                     *       "errors": [
+                     *         {
+                     *           "loc": [
+                     *             "body",
+                     *             "conditions",
+                     *             "depart_time"
+                     *           ],
+                     *           "msg": "Value error, 時間必須是 15 分鐘刻度",
+                     *           "type": "value_error"
+                     *         }
+                     *       ],
+                     *       "status": 422,
+                     *       "title": "Unprocessable Content",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/validation-failed"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 請求過於頻繁，或外部服務額度已用完；`limit_window` 標示計算窗口 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "RATE_LIMITED",
+                     *       "detail": "請求過於頻繁，請稍後再試",
+                     *       "limit_window": "minute",
+                     *       "status": 429,
+                     *       "title": "Too Many Requests",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/rate-limited"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 伺服器發生錯誤 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "INTERNAL_ERROR",
+                     *       "detail": "伺服器發生錯誤",
+                     *       "status": 500,
+                     *       "title": "Internal Server Error",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/internal-error"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 外部服務或驗證服務暫時無法使用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_UNAVAILABLE",
+                     *       "detail": "暫時無法驗證登入",
+                     *       "status": 503,
+                     *       "title": "Service Unavailable",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-unavailable"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    create_check_in_v1_check_ins_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                "x-firebase-appcheck"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInCreateResponse"];
+                };
+            };
+            /** @description 已建立新的到訪紀錄（200 表示升級或已有紀錄） */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckInCreateResponse"];
+                };
+            };
+            /** @description 登入憑證無效、過期或需要重新登入 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_TOKEN_EXPIRED",
+                     *       "detail": "登入憑證已過期",
+                     *       "status": 401,
+                     *       "title": "Unauthorized",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-token-expired"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 拒絕存取：App Check 驗證失敗、Email 尚未驗證（會員功能）、帳號刪除中，或無權使用此起訖點 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "APP_CHECK_REQUIRED",
+                     *       "detail": "缺少 App Check Token",
+                     *       "status": 403,
+                     *       "title": "Forbidden",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/app-check-required"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 找不到指定的資料 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "PLACE_NOT_FOUND",
+                     *       "detail": "找不到此地點",
+                     *       "status": 404,
+                     *       "title": "Not Found",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/place-not-found"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 與目前狀態衝突：例如出發時間已過、同一識別碼的內容不同、行程已在別處更新 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "IDEMPOTENCY_CONFLICT",
+                     *       "detail": "同一操作識別碼的內容不同",
+                     *       "status": 409,
+                     *       "title": "Conflict",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/idempotency-conflict"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 輸入欄位不合法；`errors` 列出欄位位置與原因 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "VALIDATION_FAILED",
+                     *       "detail": "輸入欄位不合法",
+                     *       "errors": [
+                     *         {
+                     *           "loc": [
+                     *             "body",
+                     *             "conditions",
+                     *             "depart_time"
+                     *           ],
+                     *           "msg": "Value error, 時間必須是 15 分鐘刻度",
+                     *           "type": "value_error"
+                     *         }
+                     *       ],
+                     *       "status": 422,
+                     *       "title": "Unprocessable Content",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/validation-failed"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 請求過於頻繁，或外部服務額度已用完；`limit_window` 標示計算窗口 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "RATE_LIMITED",
+                     *       "detail": "請求過於頻繁，請稍後再試",
+                     *       "limit_window": "minute",
+                     *       "status": 429,
+                     *       "title": "Too Many Requests",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/rate-limited"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 伺服器發生錯誤 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "INTERNAL_ERROR",
+                     *       "detail": "伺服器發生錯誤",
+                     *       "status": 500,
+                     *       "title": "Internal Server Error",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/internal-error"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 外部服務或驗證服務暫時無法使用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_UNAVAILABLE",
+                     *       "detail": "暫時無法驗證登入",
+                     *       "status": 503,
+                     *       "title": "Service Unavailable",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-unavailable"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    delete_check_in_v1_check_ins__check_in_id__delete: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                authorization?: string | null;
+            };
+            path: {
+                check_in_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionResponse"];
+                };
+            };
+            /** @description 已接受刪除，尚未完成；以 /v1/deletions/{operation_id} 查詢進度 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletionResponse"];
+                };
+            };
+            /** @description 登入憑證無效、過期或需要重新登入 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_TOKEN_EXPIRED",
+                     *       "detail": "登入憑證已過期",
+                     *       "status": 401,
+                     *       "title": "Unauthorized",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-token-expired"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 拒絕存取：App Check 驗證失敗、Email 尚未驗證（會員功能）、帳號刪除中，或無權使用此起訖點 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "EMAIL_NOT_VERIFIED",
+                     *       "detail": "請先完成 Email 驗證才能使用會員功能",
+                     *       "status": 403,
+                     *       "title": "Forbidden",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/email-not-verified"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 找不到指定的資料 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "CHECK_IN_NOT_FOUND",
+                     *       "detail": "找不到此紀錄",
+                     *       "status": 404,
+                     *       "title": "Not Found",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/check-in-not-found"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 與目前狀態衝突：例如出發時間已過、同一識別碼的內容不同、行程已在別處更新 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "IDEMPOTENCY_CONFLICT",
+                     *       "detail": "同一操作識別碼已用於其他刪除",
+                     *       "status": 409,
+                     *       "title": "Conflict",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/idempotency-conflict"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 輸入欄位不合法；`errors` 列出欄位位置與原因 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "VALIDATION_FAILED",
+                     *       "detail": "輸入欄位不合法",
+                     *       "errors": [
+                     *         {
+                     *           "loc": [
+                     *             "body",
+                     *             "conditions",
+                     *             "depart_time"
+                     *           ],
+                     *           "msg": "Value error, 時間必須是 15 分鐘刻度",
+                     *           "type": "value_error"
+                     *         }
+                     *       ],
+                     *       "status": 422,
+                     *       "title": "Unprocessable Content",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/validation-failed"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 請求過於頻繁，或外部服務額度已用完；`limit_window` 標示計算窗口 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "RATE_LIMITED",
+                     *       "detail": "請求過於頻繁，請稍後再試",
+                     *       "limit_window": "minute",
+                     *       "status": 429,
+                     *       "title": "Too Many Requests",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/rate-limited"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 伺服器發生錯誤 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "INTERNAL_ERROR",
+                     *       "detail": "伺服器發生錯誤",
+                     *       "status": 500,
+                     *       "title": "Internal Server Error",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/internal-error"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 外部服務或驗證服務暫時無法使用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_UNAVAILABLE",
+                     *       "detail": "暫時無法驗證登入",
+                     *       "status": 503,
+                     *       "title": "Service Unavailable",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-unavailable"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     deletion_status_v1_deletions__operation_id__get: {
         parameters: {
             query?: never;
@@ -4741,6 +5490,173 @@ export interface operations {
                      *       "title": "Conflict",
                      *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
                      *       "type": "https://littlelegsgo.com/problems/registration-completed"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 輸入欄位不合法；`errors` 列出欄位位置與原因 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "VALIDATION_FAILED",
+                     *       "detail": "輸入欄位不合法",
+                     *       "errors": [
+                     *         {
+                     *           "loc": [
+                     *             "body",
+                     *             "conditions",
+                     *             "depart_time"
+                     *           ],
+                     *           "msg": "Value error, 時間必須是 15 分鐘刻度",
+                     *           "type": "value_error"
+                     *         }
+                     *       ],
+                     *       "status": 422,
+                     *       "title": "Unprocessable Content",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/validation-failed"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 請求過於頻繁，或外部服務額度已用完；`limit_window` 標示計算窗口 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "RATE_LIMITED",
+                     *       "detail": "請求過於頻繁，請稍後再試",
+                     *       "limit_window": "minute",
+                     *       "status": 429,
+                     *       "title": "Too Many Requests",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/rate-limited"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 伺服器發生錯誤 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "INTERNAL_ERROR",
+                     *       "detail": "伺服器發生錯誤",
+                     *       "status": 500,
+                     *       "title": "Internal Server Error",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/internal-error"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 外部服務或驗證服務暫時無法使用 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_UNAVAILABLE",
+                     *       "detail": "暫時無法驗證登入",
+                     *       "status": 503,
+                     *       "title": "Service Unavailable",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-unavailable"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    list_missions_v1_missions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissionList"];
+                };
+            };
+            /** @description 登入憑證無效、過期或需要重新登入 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "AUTH_TOKEN_EXPIRED",
+                     *       "detail": "登入憑證已過期",
+                     *       "status": 401,
+                     *       "title": "Unauthorized",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/auth-token-expired"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 拒絕存取：App Check 驗證失敗、Email 尚未驗證（會員功能）、帳號刪除中，或無權使用此起訖點 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "EMAIL_NOT_VERIFIED",
+                     *       "detail": "請先完成 Email 驗證才能使用會員功能",
+                     *       "status": 403,
+                     *       "title": "Forbidden",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/email-not-verified"
+                     *     }
+                     */
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description 與目前狀態衝突：例如出發時間已過、同一識別碼的內容不同、行程已在別處更新 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "USER_CREATE_CONFLICT",
+                     *       "detail": "請重試",
+                     *       "status": 409,
+                     *       "title": "Conflict",
+                     *       "trace_id": "ad9a4ff0-8104-42c9-8763-e6ddb4296f3e",
+                     *       "type": "https://littlelegsgo.com/problems/user-create-conflict"
                      *     }
                      */
                     "application/problem+json": components["schemas"]["Problem"];

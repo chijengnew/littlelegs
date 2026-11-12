@@ -111,6 +111,9 @@ function Menu({ pathname }: { pathname: string }) {
                 <Link className={s.item} href="/account?tab=favorites" onClick={close}>{t("accountMenu.favorites")}</Link>
               </li>
               <li>
+                <Link className={s.item} href="/explore/passport" onClick={close}>{t("accountMenu.explore")}</Link>
+              </li>
+              <li>
                 <Link className={s.item} href="/account?tab=account" onClick={close}>{t("accountMenu.settings")}</Link>
               </li>
             </ul>

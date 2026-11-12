@@ -434,6 +434,58 @@ class Feedback(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime)
 
 
+class CheckIn(Base):
+    """家庭共用探險護照的到訪紀錄：同一會員、同一景點最多一筆。
+
+    visited_at 是首次建立紀錄的時間，verified_at 是首次定位核對成功的時間；都由伺服器產生，不是實際到場證明。
+    不保存當次座標、精確度、計算距離或裝置位置歷史。
+    """
+
+    __tablename__ = "check_ins"
+    __table_args__ = (
+        UniqueConstraint("user_id", "place_id", name="uq_check_ins_user_place"),
+        Index("ix_check_ins_list", "user_id", "created_at", "id"),
+        CheckConstraint("verification_method IN ('location','manual')", name="ck_check_ins_method"),
+        CheckConstraint("(verification_method = 'location') = (verified_at IS NOT NULL)", name="ck_check_ins_verified"),
+        MYSQL_OPTS,
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUIDBin, primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUIDBin, ForeignKey("users.id", ondelete="CASCADE"))
+    place_id: Mapped[uuid.UUID] = mapped_column(UUIDBin, ForeignKey("places.id"))
+    verification_method: Mapped[str] = mapped_column(String(16))
+    visited_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    verified_at: Mapped[datetime | None] = mapped_column(UTCDateTime)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime)
+
+
+class CheckInOperation(Base):
+    """蓋章冪等操作紀錄。check_in_id 不設外鍵：紀錄刪除後操作仍需存在，避免延遲重送讓紀錄復活。
+
+    只保存景點與核對方式的請求指紋，不保存座標或精確度。
+    """
+
+    __tablename__ = "check_in_operations"
+    __table_args__ = (
+        CheckConstraint("state IN ('completed','cancelled')", name="ck_check_in_operations_state"),
+        CheckConstraint("outcome IN ('created','upgraded','existing')", name="ck_check_in_operations_outcome"),
+        Index("ix_check_in_operations_target", "user_id", "check_in_id"),
+        Index("ix_check_in_operations_expiry", "expires_at"),
+        MYSQL_OPTS,
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(UUIDBin, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    idempotency_key: Mapped[uuid.UUID] = mapped_column(UUIDBin, primary_key=True)
+    request_fingerprint: Mapped[bytes] = mapped_column(BINARY(32))
+    fingerprint_version: Mapped[int] = mapped_column(SmallInteger)
+    state: Mapped[str] = mapped_column(String(16))
+    outcome: Mapped[str] = mapped_column(String(16))
+    check_in_id: Mapped[uuid.UUID] = mapped_column(UUIDBin)
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime)
+
+
 class RateCounter(Base):
     __tablename__ = "rate_counters"
     __table_args__ = (Index("ix_rate_counters_expiry", "purge_after"), MYSQL_OPTS)

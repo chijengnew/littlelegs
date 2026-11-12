@@ -204,6 +204,8 @@ async def seeded(migrated):
     async with eng.begin() as c:
         await c.execute(text("SET FOREIGN_KEY_CHECKS=0"))
         for t in (
+            "check_in_operations",
+            "check_ins",
             "favorite_aliases",
             "favorite_operations",
             "favorite_stops",

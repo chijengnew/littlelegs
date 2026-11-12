@@ -74,7 +74,7 @@ def _raise_quota(e: QuotaExceeded) -> None:
 
 
 def limit(category: str) -> Callable:
-    """category: paid / endpoint_select / general"""
+    """category: paid / endpoint_select / stamp / general"""
 
     async def dep(
         request: Request, user: CurrentUser | None = Depends(optional_user), st: AppState = Depends(get_state)

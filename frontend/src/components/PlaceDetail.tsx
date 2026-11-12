@@ -9,6 +9,7 @@ import { toUiError } from "@/lib/api/problem";
 import { displayAddress, facilityNote, typeNote } from "@/lib/placeText";
 import PlaceArt from "./art/PlaceArt";
 import { IndoorChip } from "./CandidateList";
+import StampCard from "./explore/StampCard";
 import { SkeletonCard } from "./Skeleton";
 import StatePanel from "./StatePanel";
 import { ArrowLeftIcon, ArrowRightIcon } from "./icons";
@@ -27,18 +28,30 @@ const CONF_CHIP: Record<string, string> = {
   estimated: ui.chipAmber,
 };
 
-function previousIsPlanner(): boolean {
+const BACK: Record<string, { href: string; from: (path: string) => boolean }> = {
+  candidates: { href: "/planner", from: (p) => p === "/planner" },
+  plan: { href: "/planner", from: (p) => p === "/planner" },
+  history: { href: "/account?tab=history", from: (p) => p.startsWith("/account/histories/") },
+  favorites: { href: "/account?tab=favorites", from: (p) => p.startsWith("/account/favorites/") },
+  passport: { href: "/explore/passport", from: (p) => p === "/explore/passport" },
+};
+
+function previousPath(): string | null {
   const nav = (window as Window & { navigation?: HistoryEntries }).navigation;
   const index = nav?.currentEntry?.index ?? 0;
-  if (!nav || index < 1) return false;
+  if (!nav || index < 1) return null;
   const url = nav.entries()[index - 1]?.url;
-  return !!url && new URL(url).pathname === "/planner";
+  if (!url) return null;
+  const prev = new URL(url);
+  return prev.origin === window.location.origin ? prev.pathname : null;
 }
 
 export default function PlaceDetail() {
   const t = useTranslations();
   const router = useRouter();
-  const fromList = useSearchParams().get("from") === "candidates";
+  const from = useSearchParams().get("from") ?? "";
+  const fromList = from === "candidates";
+  const backTo = Object.hasOwn(BACK, from) ? BACK[from] : undefined;
   const { user, ready } = useAuth();
   const uid = user?.uid ?? null;
   const { id } = useParams<{ id: string }>();
@@ -63,7 +76,8 @@ export default function PlaceDetail() {
   }, [id, t, uid, ready]);
 
   function back(event: MouseEvent<HTMLAnchorElement>) {
-    if (!fromList || !previousIsPlanner()) return;
+    const prev = backTo ? previousPath() : null;
+    if (!backTo || prev === null || !backTo.from(prev)) return;
     event.preventDefault();
     router.back();
   }
@@ -73,7 +87,7 @@ export default function PlaceDetail() {
 
   return (
     <div className={s.wrap}>
-      <Link href="/planner" className={`${ui.navLink} ${s.back}`} onClick={back}>
+      <Link href={backTo?.href ?? "/planner"} className={`${ui.navLink} ${s.back}`} onClick={back}>
         <ArrowLeftIcon className={ui.arrowStart} />
         {fromList ? t("place.backToCandidates") : t("place.back")}
       </Link>
@@ -136,6 +150,10 @@ export default function PlaceDetail() {
               <div className={ui.bannerWarn}>{data.place.removed_note ?? t("place.removed")}</div>
             )}
           </header>
+
+          {data.place.kind === "attraction" && (
+            <StampCard placeId={data.place.place_id} type={data.place.primary_type} removed={data.place.removed} />
+          )}
 
           <section className={s.section} aria-labelledby="place-evidence">
             <h2 className={s.sectionTitle} id="place-evidence">{t("place.evidence")}</h2>

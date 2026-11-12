@@ -61,6 +61,8 @@ const PAGES = [
   "/account",
   "/account/deleted",
   `/places/${MUSEUM.place_id}`,
+  "/explore/passport",
+  "/explore/missions",
   "/privacy",
   "/terms",
   "/feedback",

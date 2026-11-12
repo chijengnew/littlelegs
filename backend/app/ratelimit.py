@@ -170,6 +170,8 @@ class Limiter:
             cs.append(Counter(f"ip:{ip}:select", "minute", self.lim.ip_endpoint_select_per_min))
         elif category == "feedback":
             cs.append(Counter(f"ip:{ip}:feedback", "minute", self.lim.ip_feedback_per_min))
+        elif category == "stamp" and uid:
+            cs.append(Counter(f"uid:{uid}:stamp", "minute", self.lim.uid_stamp_per_min))
         await admit(self.factory, cs, self.clock())
 
     async def outbound(

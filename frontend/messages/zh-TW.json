@@ -26,7 +26,8 @@
     "favorites": "收藏",
     "settings": "帳號",
     "unverifiedTitle": "尚未完成註冊",
-    "unverifiedHint": "完成 Email 驗證後才能使用會員功能。"
+    "unverifiedHint": "完成 Email 驗證後才能使用會員功能。",
+    "explore": "探險護照"
   },
   "home": {
     "titleLine1": "帶孩子出門，",
@@ -785,5 +786,134 @@
     "errorCode": "錯誤代碼：{code}",
     "retry": "再試一次",
     "home": "回到首頁"
+  },
+  "explore": {
+    "title": "小小探險家",
+    "nav": "探險護照與任務",
+    "tabPassport": "探險護照",
+    "tabMissions": "任務徽章",
+    "sample": "示意",
+    "guest": {
+      "title": "到景點蓋章，收集探險護照",
+      "lead": "全家共用一本護照。到了景點，由家長定位核對，再讓孩子親手蓋章。",
+      "steps": {
+        "visit": "到了景點，打開它的地點詳情",
+        "check": "家長按「我要蓋章」，核對目前位置",
+        "stamp": "孩子按一下印章，收進探險護照",
+        "badge": "完成任務，解鎖徽章"
+      },
+      "login": "登入後開始收集",
+      "register": "註冊會員",
+      "note": "不需要孩子的姓名或生日；位置只在核對時使用，不會保存。"
+    },
+    "passport": {
+      "summary": "已收集 {n} 枚印章",
+      "countLocation": "定位核對 {n}",
+      "countManual": "手動紀錄 {n}",
+      "emptyTitle": "護照還是空的",
+      "empty": "到景點的地點詳情頁按「我要蓋章」，印章就會收進這裡。",
+      "removed": "已下架",
+      "delete": "刪除",
+      "deleteLabel": "刪除{name}的印章",
+      "deleteConfirm": "確定刪除這枚印章？任務進度會重新計算。",
+      "deleted": "已刪除這枚印章。",
+      "deleteAccepted": "已收到刪除請求，稍後完成。",
+      "deleteFailed": "刪除失敗。",
+      "note": "日期是系統記錄的時間。定位核對只確認當時在景點附近，不代表一定到過。"
+    },
+    "method": {
+      "location": "定位核對",
+      "manual": "手動紀錄"
+    },
+    "date": {
+      "recorded": "紀錄日期",
+      "firstRecorded": "初次紀錄日期",
+      "verified": "定位核對日期"
+    },
+    "missions": {
+      "summary": "已解鎖 {n}／{total} 枚徽章",
+      "unlocked": "已解鎖",
+      "locked": "尚未解鎖",
+      "progress": "{n}／{total}",
+      "progressLabel": "{title}進度",
+      "note": "只計入定位核對成功、目前仍在架上的不同景點；手動紀錄不計入。刪除印章或景點分類調整後，進度會重新計算。",
+      "loadFailed": "任務進度暫時無法載入。",
+      "items": {
+        "first_stamp": {
+          "title": "第一枚印章",
+          "description": "定位核對任 1 個景點"
+        },
+        "park_explorer": {
+          "title": "公園探險家",
+          "description": "定位核對 3 座公園或遊戲場"
+        },
+        "culture_scholar": {
+          "title": "文化小博士",
+          "description": "定位核對 2 間博物館"
+        },
+        "little_explorer": {
+          "title": "小小探險家",
+          "description": "定位核對 5 個不同景點"
+        }
+      }
+    },
+    "stamp": {
+      "title": "探險護照",
+      "guestLead": "登入會員後，到了這裡可以定位核對，蓋一枚印章收進探險護照。",
+      "login": "登入後蓋章",
+      "howTo": "怎麼玩",
+      "none": "這裡還沒有蓋章。",
+      "start": "我要蓋章",
+      "introTitle": "先確認您在景點附近",
+      "intro": "按「開始定位核對」後，瀏覽器會詢問一次定位權限。位置只用來比對您是否在這個景點附近，比對完就丟棄，不會保存。",
+      "limits": "定位可能有誤差，也可能被模擬；這只是親子遊戲的位置檢查。",
+      "locate": "開始定位核對",
+      "cancel": "取消",
+      "locating": "正在取得目前位置…",
+      "checking": "正在核對…",
+      "successTitle": "核對成功！",
+      "upgradedTitle": "已升級為定位核對！",
+      "tapHint": "請孩子按一下印章。",
+      "tap": "按一下蓋章",
+      "stamped": "已蓋章，收進探險護照。",
+      "location": "已蓋章",
+      "manual": "已手動紀錄",
+      "manualLead": "手動紀錄不計入任務。到了現場，可以再定位核對一次。",
+      "upgrade": "定位核對",
+      "manualRecord": "改用手動紀錄",
+      "manualSaved": "已手動紀錄，收進探險護照。",
+      "manualNote": "手動紀錄會標示為「手動紀錄」，不算定位成功，也不計入任務。",
+      "relocate": "重新定位",
+      "resend": "再送一次",
+      "toPassport": "到探險護照看看",
+      "removed": "這個景點已下架，不能新增蓋章。",
+      "loadFailed": "蓋章狀態暫時無法載入。",
+      "errors": {
+        "tooFar": "目前位置離景點的參考點太遠。請靠近景點後重新定位，或改用手動紀錄。",
+        "inaccurate": "這次定位不夠精確。請到空曠處重新定位，或改用手動紀錄。",
+        "removed": "這個景點已下架，不能新增蓋章。",
+        "notStampable": "只有景點可以蓋章。",
+        "noCoordinates": "這個景點沒有可用的參考位置，暫時不能蓋章。",
+        "notFound": "找不到這個地點。",
+        "network": "連線中斷，還不確定是否已蓋章。按「再送一次」不會重複蓋章。",
+        "geo": {
+          "denied": "定位權限被拒絕。可以到瀏覽器設定允許定位後重新定位，或改用手動紀錄。",
+          "unavailable": "暫時取不到目前位置。請到空曠處重新定位，或改用手動紀錄。",
+          "timeout": "定位逾時。請重新定位，或改用手動紀錄。",
+          "unsupported": "這個瀏覽器無法定位，可以改用手動紀錄。"
+        }
+      }
+    },
+    "link": {
+      "stamp": "蓋章",
+      "stampLabel": "到{name}的地點詳情蓋章"
+    },
+    "search": {
+      "title": "找景點蓋章",
+      "lead": "去了行程以外的景點？搜尋名稱，打開地點詳情就能蓋章。",
+      "label": "景點名稱",
+      "placeholder": "輸入景點名稱",
+      "noResults": "找不到符合的景點"
+    }
   }
 }

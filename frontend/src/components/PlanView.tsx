@@ -11,6 +11,7 @@ import { queryListId } from "@/lib/packingStorage";
 import { formatClock, taipeiToday, toMinutes } from "@/lib/time";
 import { tripMax } from "@/lib/weather";
 import PlaceArt from "./art/PlaceArt";
+import StampLink from "./explore/StampLink";
 import { useAuth } from "./AuthProvider";
 import MapPanel, { MapHint, mapStateOf, useEndpointTitles } from "./MemberMap";
 import NavLink from "./NavLink";
@@ -155,6 +156,7 @@ export default function PlanView({ plan, stops, dirty, busy, loading = false, on
                 stops={plan.stops}
                 returnBy={trip?.arrive}
                 navHref={(to) => planLegUrl(plan, to, t("plan.navDestination"))}
+                stampable
                 action={
                   <button type="button" className={`${ui.secondary} ${s.adjustBtn}`} onClick={() => setEditingFor(plan)}>
                     <PencilIcon size={16} />
@@ -532,6 +534,7 @@ export function Timeline({
   stops = [],
   returnBy,
   action,
+  stampable = false,
 }: {
   items: Schemas["TimelineItem"][];
   nameOf: Names;
@@ -539,6 +542,7 @@ export function Timeline({
   stops?: PlanStop[];
   returnBy?: string;
   action?: ReactNode;
+  stampable?: boolean;
 }) {
   const t = useTranslations("plan");
   const numbers: number[] = [];
@@ -582,6 +586,9 @@ export function Timeline({
                 <span className={s.tlMeta}>
                   {minutes !== null && <span>{t("stay", { m: minutes })}</span>}
                   {info?.hours && <HoursText hours={info.hours} />}
+                  {stampable && it.place_id && !info?.removed && (
+                    <StampLink placeId={it.place_id} name={it.name ?? nameOf(it.place_id)} from="plan" className={s.navLeg} />
+                  )}
                 </span>
               </>
             );

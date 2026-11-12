@@ -5,7 +5,7 @@
 - 刪帳：auth_time ≤ 5 分鐘＋check_revoked；順序：意圖 → 本地 deleting → 刪 Firebase（已不存在視為成功）
   → 刪 MySQL 會員與所有關聯資料（含 UID 限流列）→ 完成標記。不保留 MySQL 會員 tombstone。
   Email 未驗證（沒有本地會員）的帳號不走這裡，改由 registration.cancel_registration「取消註冊」。
-- 單筆刪除（歷史／收藏）：保留窗口內最小防重送狀態；清除不再被本人其他紀錄引用的私人端點。
+- 單筆刪除（歷史／收藏／到訪紀錄）：保留窗口內最小防重送狀態；清除不再被本人其他紀錄引用的私人端點。
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import rowcount
 from app.db.locks import uid_lock
 from app.db.models import (
+    CheckIn,
     Favorite,
     FavoriteOperation,
     History,
@@ -30,6 +31,7 @@ from app.db.models import (
 )
 from app.errors import ApiError
 from app.ratelimit import delete_uid_counters
+from app.services.check_ins import delete_check_in_rows
 from app.services.history import delete_history_rows
 from app.services.intents import DeletionIntent, IntentWriteFailed, IntentWriteUnknown
 from app.state import AppState
@@ -37,6 +39,11 @@ from app.state import AppState
 log = logging.getLogger("littlelegs.deletion")
 
 REAUTH_WINDOW_S = 5 * 60
+RECORD_MODELS: dict[str, type[History] | type[Favorite] | type[CheckIn]] = {
+    "history": History,
+    "favorite": Favorite,
+    "check_in": CheckIn,
+}
 
 
 @dataclass
@@ -111,6 +118,9 @@ async def process_intent(st: AppState, intent: DeletionIntent) -> bool:
     elif intent.kind == "favorite":
         async with st.factory() as s, s.begin():
             await _delete_favorite_rows(s, uid, uuid.UUID(intent.target_id))
+    elif intent.kind == "check_in":
+        async with st.factory() as s, s.begin():
+            await delete_check_in_rows(s, uid, uuid.UUID(intent.target_id))
     else:
         raise ValueError(f"未知意圖類型 {intent.kind}")
     await st.intents.mark_completed(intent.operation_id, _now_iso(st))
@@ -152,14 +162,14 @@ async def _process_account(st: AppState, user_id: uuid.UUID, firebase_uid: str |
 async def request_record_deletion(
     st: AppState, user_id: uuid.UUID, kind: str, target: uuid.UUID, operation_id: uuid.UUID
 ) -> DeletionOutcome:
-    """歷史／收藏單筆刪除。先驗擁有權；不存在時若同 operation_id 已完成則回完成，否則 404。"""
+    """歷史／收藏／到訪紀錄單筆刪除。先驗擁有權；不存在時若同 operation_id 已完成則回完成，否則 404。"""
     op = str(operation_id)
     existing = await st.intents.get_intent(op)
     if existing is not None:
         if (existing.kind, existing.user_id, existing.target_id) != (kind, str(user_id), str(target)):
             raise ApiError(409, "IDEMPOTENCY_CONFLICT", "同一操作識別碼已用於其他刪除")
     else:
-        model = History if kind == "history" else Favorite
+        model = RECORD_MODELS[kind]
         async with st.factory() as s:
             owned = (await s.execute(select(model.id).where(model.id == target, model.user_id == user_id))).scalar()
         if owned is None:

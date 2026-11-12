@@ -21,6 +21,7 @@ import { usePlanner } from "../PlannerProvider";
 import { SkeletonCard } from "../Skeleton";
 import StatePanel from "../StatePanel";
 import { ArrowLeftIcon, ArrowRightIcon } from "../icons";
+import StampLink from "../explore/StampLink";
 import MemberGate from "./MemberGate";
 import Segments from "./Segments";
 import StopsTitle from "./StopsTitle";
@@ -190,6 +191,9 @@ function Detail({ kind, item }: { kind: Kind; item: SavedItem }) {
                   <div className={s.meta}>
                     <span>{t("saved.stay", { m: x.stay_minutes })}</span>
                     {x.removed && <span className={ui.chipRed}>{t("saved.removed")}</span>}
+                    {!x.removed && (
+                      <StampLink placeId={x.place_id} name={x.name ?? t("saved.unknownPlace")} from={kind === "history" ? "history" : "favorites"} />
+                    )}
                   </div>
                   {x.reasons_at_save.length > 0 && (
                     <p className={ui.hint} style={{ margin: "4px 0 0" }}>
