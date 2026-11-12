@@ -1,0 +1,61 @@
+.svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sky { fill: var(--ink-900); }
+.star { fill: var(--paper-50); opacity: 0.55; }
+.sun { fill: var(--sun-400); }
+.sunRing { fill: none; stroke: var(--sun-400); stroke-width: 2; opacity: 0.3; }
+.cloud { fill: var(--paper-50); opacity: 0.92; }
+.hillFar { fill: var(--art-hill-far); }
+.hill { fill: var(--blue-500); }
+.ground { fill: var(--paper-100); }
+.road { fill: none; stroke: var(--paper-200); stroke-width: 16; stroke-linecap: round; }
+.roadLine { fill: none; stroke: var(--sun-400); stroke-width: 2; stroke-dasharray: 8 10; stroke-linecap: round; }
+.pin { fill: var(--orange-500); }
+.pinSun { fill: var(--sun-400); }
+.ink { fill: var(--ink-900); }
+.paper { fill: var(--paper-50); }
+.car { fill: var(--orange-500); }
+.wheel { fill: var(--ink-950); }
+.luggage { fill: var(--sun-400); }
+.trunk { fill: var(--art-trunk); }
+.leaf { fill: var(--sage-500); }
+.leafDark { fill: var(--sage-700); }
+.stem { fill: none; stroke: var(--sage-700); stroke-width: 3; stroke-linecap: round; }
+.flower { fill: var(--orange-500); }
+.flowerSun { fill: var(--sun-400); }
+.print { fill: var(--ink-900); opacity: 0.16; }
+.shade { fill: var(--ink-900); opacity: 0.12; }
+
+.day .sky { fill: var(--art-sky-day); }
+.day .cloud { fill: var(--surface); opacity: 1; }
+.day .hillFar { fill: var(--art-hill-far-day); }
+
+.skin1 { fill: var(--art-skin-1); }
+.skin2 { fill: var(--art-skin-2); }
+.skin3 { fill: var(--art-skin-3); }
+.hair1 { fill: var(--art-hair-1); }
+.hair2 { fill: var(--art-hair-2); }
+.hat { fill: var(--sun-400); }
+.pack { fill: var(--sage-500); }
+.packDark { fill: var(--sage-700); }
+.shirtOrange { fill: var(--orange-500); }
+.shirtSun { fill: var(--sun-400); }
+.shirtPaper { fill: var(--paper-50); }
+.pants { fill: var(--ink-800); }
+.pantsBlue { fill: var(--blue-500); }
+.shoe { fill: var(--ink-950); }
+
+.mascotBody { fill: var(--sun-400); }
+.mascotCrease { fill: none; stroke: var(--orange-700); stroke-width: 1.4; stroke-linecap: round; opacity: 0.45; }
+.mascotFoot { fill: var(--orange-700); }
+.mascotMouth { fill: none; stroke: var(--ink-900); stroke-width: 1.6; stroke-linecap: round; }
+
+@media (min-width: 768px) and (max-width: 999px) {
+  .wideCloudNear {
+    display: none;
+  }
+}

@@ -12,6 +12,7 @@ import { linkFavoritePacking } from "@/lib/packingStorage";
 import { useAuth } from "./AuthProvider";
 import { usePlanner } from "./PlannerProvider";
 import type { EditStop } from "./PlanView";
+import { ArrowRightIcon, HeartIcon } from "./icons";
 import ui from "./ui.module.css";
 
 type SaveAs = "plan" | "unverified" | "infeasible";
@@ -23,7 +24,7 @@ export default function FavoriteButton({ plan, stops, dirty, busy }: Props) {
   const t = useTranslations();
   const auth = useAuth();
   const { form } = usePlanner();
-  const [result, setResult] = useState<{ fp: string; created: boolean; notice: string } | null>(null);
+  const [result, setResult] = useState<{ fp: string; created: boolean } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export default function FavoriteButton({ plan, stops, dirty, busy }: Props) {
         body,
       });
       if (data) {
-        setResult({ fp, created: data.created, notice: data.notice });
+        setResult({ fp, created: data.created });
         if (auth.user && plan) linkFavoritePacking(auth.user.uid, data.favorite.id, plan.query_id);
         op.current = null;
       } else setError(toUiError(t, problem, response.status).message);
@@ -68,7 +69,7 @@ export default function FavoriteButton({ plan, stops, dirty, busy }: Props) {
     }
   }
 
-  const star = <span aria-hidden="true">☆ </span>;
+  const star = <HeartIcon />;
   if (!auth.configured || !auth.booted || auth.pending || (auth.user && !auth.member)) {
     return (
       <>
@@ -80,19 +81,22 @@ export default function FavoriteButton({ plan, stops, dirty, busy }: Props) {
   if (!auth.user) {
     return (
       <>
-        <Link className={ui.secondary} href={withNext("/login", "/")}>{star}{t("favorite.loginToSave")}</Link>
-        <p className={ui.hint} style={{ marginTop: -4 }}>{t("plan.saveMemberOnly")}</p>
+        <Link className={ui.secondary} href={withNext("/login", "/planner")}>{star}{t("favorite.loginToSave")}</Link>
       </>
     );
   }
   if (saved) {
     return (
       <div className={ui.bannerOk} role="status">
-        <span aria-hidden="true">★</span>
+        <HeartIcon fill="currentColor" />
         <div>
           <strong>{t(saved.created ? "favorite.saved" : "favorite.savedExisting")}</strong>
-          <p className={ui.hint} style={{ margin: "2px 0 0" }}>{saved.notice}</p>
-          <Link href="/account?tab=favorites">{t("favorite.viewInAccount")}</Link>
+          <p style={{ margin: "2px 0 0" }}>
+            <Link className={ui.inlineNav} href="/account?tab=favorites" style={{ marginLeft: "calc(var(--space-2) * -1)" }}>
+              {t("favorite.viewInAccount")}
+              <ArrowRightIcon className={ui.arrowEnd} />
+            </Link>
+          </p>
         </div>
       </div>
     );
@@ -105,8 +109,8 @@ export default function FavoriteButton({ plan, stops, dirty, busy }: Props) {
             {t(body.saved_as === "infeasible" ? "favorite.confirmInfeasible" : "favorite.confirmUnverified")}
           </p>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button type="button" className={ui.secondary} onClick={() => setConfirming(false)}>{t("favorite.cancel")}</button>
             <button type="button" className={ui.primary} onClick={save} disabled={saving || busy}>{t("favorite.confirmSave")}</button>
-            <button type="button" className={ui.soft} onClick={() => setConfirming(false)}>{t("favorite.cancel")}</button>
           </div>
         </div>
       </div>

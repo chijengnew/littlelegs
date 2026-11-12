@@ -6,6 +6,8 @@ import { api, type Schemas } from "@/lib/api/client";
 import { toUiError } from "@/lib/api/problem";
 import type { EndpointChoice } from "@/lib/form";
 import { uuidv4 } from "@/lib/ids";
+import { displayAddress } from "@/lib/placeText";
+import { LocateIcon, MapPinIcon } from "./icons";
 import ui from "./ui.module.css";
 import s from "./EndpointPicker.module.css";
 
@@ -32,7 +34,7 @@ export default function EndpointPicker({ label, value, onChange, error }: Props)
         </span>
         <div className={s.selected} aria-labelledby={`${id}-l`}>
           <span className={s.pin} aria-hidden="true">
-            {value.endpoint.type === "device_coordinate" ? "◎" : "●"}
+            {value.endpoint.type === "device_coordinate" ? <LocateIcon size={22} /> : <MapPinIcon size={22} />}
           </span>
           <span className={s.selectedName}>{value.display}</span>
           <button type="button" className={ui.ghost} onClick={() => onChange(null)}>
@@ -140,7 +142,7 @@ function PlaceSearch({ onPick }: { onPick: (v: EndpointChoice) => void }) {
                   <span className={p.kind === "lodging" ? ui.chipAmber : ui.chipBlue}>
                     {t(p.kind === "lodging" ? "endpoint.lodging" : "endpoint.attraction")}
                   </span>
-                  {p.address ?? p.city}
+                  {displayAddress(p.address) ?? p.city}
                 </span>
               </button>
             </li>
@@ -211,7 +213,7 @@ function GoogleSearch({ onPick }: { onPick: (v: EndpointChoice) => void }) {
           endpoint_id: data.endpoint_id ?? null,
           label: trimmed || null,
         },
-        display: trimmed || t("endpoint.customPlace"),
+        display: trimmed || sug.text?.trim() || t("endpoint.customPlace"),
       });
     } catch (e) {
       setErr(toUiError(t, e).message);
@@ -303,7 +305,7 @@ function DevicePick({ onPick }: { onPick: (v: EndpointChoice) => void }) {
 
   return (
     <div>
-      <button type="button" className={ui.soft} onClick={locate} disabled={busy}>
+      <button type="button" className={ui.soft} onClick={locate} disabled={busy} aria-busy={busy}>
         {busy ? t("endpoint.locating") : t("endpoint.useDevice")}
       </button>
       <div aria-live="polite">{err && <p className={ui.error}>{err}</p>}</div>

@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
+import { LogoutIcon } from "../icons";
 import ui from "../ui.module.css";
 
-export default function SignOutButton({ to = "/" }: { to?: string }) {
+export default function SignOutButton({ to = "/", className = ui.secondary, icon = false }: { to?: string; className?: string; icon?: boolean }) {
   const t = useTranslations("auth");
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -30,7 +31,8 @@ export default function SignOutButton({ to = "/" }: { to?: string }) {
 
   return (
     <>
-      <button type="button" className={ui.secondary} onClick={signOut} disabled={busy} aria-busy={busy}>
+      <button type="button" className={className} onClick={signOut} disabled={busy} aria-busy={busy}>
+        {icon && <LogoutIcon size={18} />}
         {t("logout")}
       </button>
       {error && <p className={ui.error} role="alert">{t("logoutFailed")}</p>}

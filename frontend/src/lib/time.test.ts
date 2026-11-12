@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { QUARTER_TIMES, addDays, dateRange, formatClock, fromMinutes, taipeiInstant, taipeiToday, toMinutes } from "./time";
+import { HALF_HOUR_TIMES, addDays, dateRange, formatClock, formatMonthDay, fromMinutes, taipeiInstant, taipeiToday, timeOptions, toMinutes } from "./time";
 
 describe("台北日期", () => {
   test("UTC 16:00 起算台北隔天", () => {
@@ -27,10 +27,18 @@ describe("15 分鐘刻度", () => {
     expect(fromMinutes(825)).toBe("13:45");
   });
 
-  test("一天 96 個刻度", () => {
-    expect(QUARTER_TIMES).toHaveLength(96);
-    expect(QUARTER_TIMES[0]).toBe("00:00");
-    expect(QUARTER_TIMES.at(-1)).toBe("23:45");
+  test("選單一天 48 個半小時刻度", () => {
+    expect(HALF_HOUR_TIMES).toHaveLength(48);
+    expect(HALF_HOUR_TIMES[0]).toBe("00:00");
+    expect(HALF_HOUR_TIMES[1]).toBe("00:30");
+    expect(HALF_HOUR_TIMES.at(-1)).toBe("23:30");
+  });
+
+  test("舊的 15 分鐘值仍會出現在選單裡", () => {
+    expect(timeOptions("09:00")).toBe(HALF_HOUR_TIMES);
+    const opts = timeOptions("09:15");
+    expect(opts).toHaveLength(49);
+    expect(opts.slice(18, 21)).toEqual(["09:00", "09:15", "09:30"]);
   });
 });
 
@@ -43,4 +51,9 @@ describe("formatClock", () => {
     expect(formatClock(null)).toBe("--:--");
     expect(formatClock("not-a-time")).toBe("not-a-time");
   });
+});
+
+test("標籤與摘要用的日期：11/13（五），月日不補零", () => {
+  expect(formatMonthDay("2026-11-13")).toBe("11/13（五）");
+  expect(formatMonthDay("2026-12-05")).toBe("12/5（六）");
 });

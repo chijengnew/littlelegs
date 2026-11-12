@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { fieldFromLoc, initialForm, toConditions, validateForm, type FormState } from "./form";
+import {
+  clampConditionStep, fieldFromLoc, firstStepWithError, initialForm, stepErrors, toConditions, validateForm, type FormState,
+} from "./form";
 
 const NOW = new Date("2026-10-29T02:00:00Z");
 
@@ -93,5 +95,30 @@ describe("fieldFromLoc", () => {
     expect(fieldFromLoc("conditions.children_ages.0")).toBe("children");
     expect(fieldFromLoc("conditions")).toBe("return_time");
     expect(fieldFromLoc("stops.0")).toBeNull();
+  });
+});
+
+describe("條件子步驟", () => {
+  test("各子步驟只取自己的欄位錯誤", () => {
+    const errors = { date: "a", start: "b", children: "c", lunch: "d" };
+    expect(stepErrors(errors, 0)).toEqual({ date: "a" });
+    expect(stepErrors(errors, 1)).toEqual({ start: "b" });
+    expect(stepErrors(errors, 2)).toEqual({ children: "c" });
+    expect(stepErrors(errors, 3)).toEqual({ lunch: "d" });
+  });
+
+  test("有錯誤時回到最前面需要修正的子步驟", () => {
+    expect(firstStepWithError({})).toBe(-1);
+    expect(firstStepWithError({ children: "x", nap: "y" })).toBe(2);
+    expect(firstStepWithError({ end: "x", depart_time: "y" })).toBe(0);
+  });
+
+  test("暫存的子步驟只接受範圍內的整數", () => {
+    expect(clampConditionStep(2)).toBe(2);
+    expect(clampConditionStep(9)).toBe(3);
+    expect(clampConditionStep(-1)).toBe(0);
+    expect(clampConditionStep("2")).toBe(0);
+    expect(clampConditionStep(1.5)).toBe(0);
+    expect(clampConditionStep(undefined)).toBe(0);
   });
 });

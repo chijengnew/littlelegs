@@ -1,11 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { api, type Candidate, type CandidateResponse, type PlanResponse } from "@/lib/api/client";
 import { toUiError, type UiError } from "@/lib/api/problem";
 import { clearFlow, loadFlow, saveFlow } from "@/lib/flowStorage";
-import { fieldFromLoc, initialForm, toConditions, validateForm, type FormErrors, type FormState } from "@/lib/form";
+import {
+  LAST_CONDITION_STEP, clampConditionStep, fieldFromLoc, firstStepWithError, initialForm, stepErrors, toConditions, validateForm,
+  type FormErrors, type FormState,
+} from "@/lib/form";
 import { uuidv7 } from "@/lib/ids";
 import { purgeOtherMembers } from "@/lib/packingStorage";
 import { currentFirebaseUid } from "@/lib/firebaseClient";
@@ -39,9 +42,18 @@ type PlannerValue = {
   runPlan: (mode: "sort" | "check") => Promise<void>;
   toggle: (c: Candidate) => void;
   editStops: (next: EditStop[]) => void;
+  restoreStops: (next: EditStop[]) => void;
   editConditions: () => void;
   startFrom: (next: FormState) => void;
   resetAll: () => void;
+  attach: () => () => void;
+  conditionStep: number;
+  returnToSummary: boolean;
+  inProgress: boolean;
+  editForm: (next: FormState) => void;
+  nextConditionStep: () => boolean;
+  prevConditionStep: () => void;
+  jumpConditionStep: (n: number) => void;
 };
 
 const PlannerContext = createContext<PlannerValue | null>(null);
@@ -59,6 +71,9 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
   const uid = auth.user?.uid ?? null;
   const [step, setStep] = useState<Step>("conditions");
+  const [conditionStep, setConditionStep] = useState(0);
+  const [returnToSummary, setReturnToSummary] = useState(false);
+  const [edited, setEdited] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [apiError, setApiError] = useState<UiError | null>(null);
@@ -77,6 +92,11 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
   const [importError, setImportError] = useState<UiError | null>(null);
   const [planMode, setPlanMode] = useState<"sort" | "check" | null>(null);
   const [resuming, setResuming] = useState(false);
+  const [attached, setAttached] = useState(0);
+  const attach = useCallback(() => {
+    setAttached((n) => n + 1);
+    return () => setAttached((n) => n - 1);
+  }, []);
   const resume = useRef<Resume | null>(null);
   const pendingPlan = useRef<Resume | null>(null);
   const previousUid = useRef(uid);
@@ -104,6 +124,9 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
       setSearched(v.searched ?? false);
       setOrdered(v.ordered ?? false);
       setPlanMode(v.planMode ?? null);
+      setConditionStep(clampConditionStep(v.conditionStep));
+      setReturnToSummary(v.returnToSummary === true && clampConditionStep(v.conditionStep) < LAST_CONDITION_STEP);
+      setEdited(v.edited === true);
       if (v.searched && (v.step === "candidates" || v.step === "plan")) {
         resume.current = { target: v.step, mode: v.planMode ?? "sort", dirty: v.dirty ?? false };
         setStep(v.step);
@@ -147,6 +170,9 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
       setOrdered(false);
       setPlanMode(null);
       setStep("conditions");
+      setConditionStep(0);
+      setReturnToSummary(false);
+      setEdited(false);
     }
   }, [uid]);
 
@@ -182,13 +208,13 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
     const r = resume.current ?? pendingPlan.current;
     saveFlow({
       form, queryId, submittedKey, selection, ownerUid: uid, searched, ordered,
-      step: r?.target ?? step, planMode: r?.mode ?? planMode ?? undefined, dirty: r?.dirty ?? dirty,
+      step: r?.target ?? step, planMode: r?.mode ?? planMode ?? undefined, dirty: r?.dirty ?? dirty, conditionStep, returnToSummary, edited,
     });
-  }, [form, queryId, submittedKey, selection, flowOwner, uid, searched, ordered, auth.ready, step, planMode, dirty]);
+  }, [form, queryId, submittedKey, selection, flowOwner, uid, searched, ordered, auth.ready, step, planMode, dirty, conditionStep, returnToSummary, edited]);
 
   useEffect(() => {
     const r = resume.current;
-    if (!r || !form || !auth.ready || blocked || flowOwner !== uid || currentFirebaseUid() !== uid) return;
+    if (!r || attached === 0 || !form || !auth.ready || blocked || flowOwner !== uid || currentFirebaseUid() !== uid) return;
     resume.current = null;
     if (r.target === "plan") pendingPlan.current = r;
     searchCandidates({ resume: true }).then((ok) => {
@@ -199,7 +225,7 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
       if (!ok || r.target === "candidates") setResuming(false);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, auth.ready, blocked, flowOwner, uid]);
+  }, [attached, form, auth.ready, blocked, flowOwner, uid]);
 
   useEffect(() => {
     const r = pendingPlan.current;
@@ -227,6 +253,7 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
     if (Object.keys(fe).length) {
       setErrors(fe);
       setStep("conditions");
+      jumpToError(firstStepWithError(fe));
     }
   }
 
@@ -236,7 +263,7 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
     setErrors(v);
     setApiError(null);
     if (Object.keys(v).length) {
-      document.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
+      jumpToError(firstStepWithError(v));
       return false;
     }
     const conditions = toConditions(form);
@@ -332,7 +359,54 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
     setDirty(true);
   }
 
+  function restoreStops(next: EditStop[]) {
+    setSelection(next);
+    setDirty(false);
+  }
+
+  function nextConditionStep(): boolean {
+    if (!form) return false;
+    const v = stepErrors(validateForm(form), conditionStep);
+    setErrors(v);
+    if (Object.keys(v).length) return false;
+    if (returnToSummary) {
+      setReturnToSummary(false);
+      setConditionStep(LAST_CONDITION_STEP);
+      setErrors(stepErrors(validateForm(form), LAST_CONDITION_STEP));
+      return true;
+    }
+    setConditionStep((n) => Math.min(n + 1, LAST_CONDITION_STEP));
+    return true;
+  }
+
+  function prevConditionStep() {
+    setErrors({});
+    setReturnToSummary(false);
+    setConditionStep((n) => Math.max(n - 1, 0));
+  }
+
+  function jumpConditionStep(n: number) {
+    const target = clampConditionStep(n);
+    setErrors({});
+    setConditionStep(target);
+    setReturnToSummary(target < LAST_CONDITION_STEP);
+  }
+
+  function jumpToError(n: number) {
+    const target = Math.max(0, n);
+    setConditionStep(target);
+    setReturnToSummary(target < LAST_CONDITION_STEP);
+  }
+
+  function editForm(next: FormState) {
+    setForm(next);
+    setEdited(true);
+  }
+
   function editConditions() {
+    setConditionStep(0);
+    setReturnToSummary(false);
+    setEdited(false);
     setForm(initialForm());
     setErrors({});
     setApiError(null);
@@ -342,6 +416,7 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
   function startFrom(next: FormState) {
     resetAll();
     setForm(next);
+    setEdited(true);
   }
 
   function resetAll() {
@@ -356,6 +431,9 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
     setErrors({});
     setApiError(null);
     setStep("conditions");
+    setConditionStep(0);
+    setReturnToSummary(false);
+    setEdited(false);
     setSearched(false);
     setRevision(null);
     setImportError(null);
@@ -371,7 +449,9 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
   const value: PlannerValue = {
     step, setStep, form, setForm, errors, setErrors, apiError, busy, queryId, cands, selection, plan, dirty, searched,
     importing, importError, clearImportError: () => setImportError(null), resuming, loading, blocked,
-    searchCandidates, runPlan, toggle, editStops, editConditions, startFrom, resetAll,
+    searchCandidates, runPlan, toggle, editStops, restoreStops, editConditions, startFrom, resetAll, attach,
+    conditionStep, returnToSummary, nextConditionStep, prevConditionStep, jumpConditionStep,
+    inProgress: step !== "conditions" || conditionStep > 0 || edited, editForm,
   };
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>;
 }

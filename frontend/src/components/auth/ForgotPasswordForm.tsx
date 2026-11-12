@@ -7,6 +7,7 @@ import { z } from "zod";
 import { authErrorKey, firebaseErrorCode, safeErrorCode, withNext } from "@/lib/authFlow";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { continueUrl, useAuthPage } from "./useAuthPage";
+import { ArrowLeftIcon, MailIcon } from "../icons";
 import ui from "../ui.module.css";
 import s from "./auth.module.css";
 
@@ -65,10 +66,12 @@ export default function ForgotPasswordForm() {
   return (
     <div className={s.wrap}>
       <section className={ui.card}>
+        <span className={s.stateIcon} aria-hidden="true"><MailIcon size={28} /></span>
         <h1 className={s.title}>{t("auth.forgotTitle")}</h1>
         <p className={s.lead}>{t("auth.forgotDescription")}</p>
+        <p className={ui.hint}>{t("auth.forgotGoogle")}</p>
         {sent ? (
-          <p className={ui.bannerOk} role="status" style={{ marginTop: 16 }}>{t("auth.forgotSent")}</p>
+          <p className={`${ui.bannerOk} ${s.notice}`} role="status">{t("auth.forgotSent")}</p>
         ) : (
           <form onSubmit={submit} className={s.form} noValidate>
             <div>
@@ -82,9 +85,12 @@ export default function ForgotPasswordForm() {
             </button>
           </form>
         )}
-        <div className={s.links}>
-          <Link href={withNext("/login", next)}>{t("auth.toLogin")}</Link>
-        </div>
+        <p className={s.backRow}>
+          <Link className={ui.navLink} href={withNext("/login", next)}>
+            <ArrowLeftIcon className={ui.arrowStart} />
+            {t("auth.backToLogin")}
+          </Link>
+        </p>
       </section>
     </div>
   );

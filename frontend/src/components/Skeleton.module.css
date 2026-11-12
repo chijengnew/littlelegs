@@ -1,7 +1,7 @@
 .bone {
   display: block;
   border-radius: 6px;
-  background: var(--divider);
+  background: var(--border-subtle);
   opacity: 0;
   animation:
     appear 150ms ease-out 300ms forwards,
@@ -11,8 +11,8 @@
 .card {
   composes: bone;
   border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: var(--shadow);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
   padding: 16px;
   display: grid;
   gap: 10px;

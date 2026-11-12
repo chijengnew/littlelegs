@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import type { Schemas } from "@/lib/api/client";
 import { endpointName } from "@/lib/saved";
-import { TZ, formatDateLabel } from "@/lib/time";
+import { TZ, taipeiToday } from "@/lib/time";
 
 export type Kind = "history" | "favorite";
 export type HistoryItem = Schemas["HistoryItem"];
@@ -22,6 +22,45 @@ const stampFormat = new Intl.DateTimeFormat("zh-TW", {
   hour12: false,
 });
 
+const dayParts = new Intl.DateTimeFormat("zh-TW", { timeZone: TZ, month: "numeric", day: "numeric", weekday: "short" });
+
+const narrowWeekday = new Intl.DateTimeFormat("zh-TW", { timeZone: TZ, weekday: "narrow" });
+
+export function fullDate(isoDate: string): string {
+  const weekday = narrowWeekday.format(new Date(`${isoDate}T12:00:00+08:00`));
+  const [y, m, d] = isoDate.split("-");
+  return `${y}/${Number(m)}/${Number(d)}（${weekday}）`;
+}
+
+export const isPast = (isoDate: string, today: string = taipeiToday()) => isoDate < today;
+
+export function stopsOf(it: SavedItem): { name?: string | null; primary_type?: string | null }[] {
+  return it.stops ?? it.stop_previews ?? [];
+}
+
+export function stopTypes(it: SavedItem, max = 3): string[] {
+  const out: string[] = [];
+  for (const x of stopsOf(it)) {
+    if (x.primary_type && !out.includes(x.primary_type)) out.push(x.primary_type);
+    if (out.length === max) break;
+  }
+  return out;
+}
+
+export type Status = { key: string; tone: "green" | "amber" | "red" };
+
+export function statusOf(it: SavedItem): Status | null {
+  if (isFavorite(it)) return it.saved_as === "plan" ? null : { key: `saved.savedAs.${it.saved_as}`, tone: "amber" };
+  if (it.status === "failed") return { key: "saved.status.failed", tone: "red" };
+  return it.plan_ordered ? { key: "saved.ordered", tone: "green" } : null;
+}
+
+export function dateTile(isoDate: string): { month: string; day: string; weekday: string } {
+  const parts = dayParts.formatToParts(new Date(`${isoDate}T12:00:00+08:00`));
+  const pick = (type: string) => parts.find((x) => x.type === type)?.value ?? "";
+  return { month: pick("month"), day: pick("day"), weekday: pick("weekday") };
+}
+
 export function useSavedText() {
   const t = useTranslations();
   const fallback = { place: t("saved.unknownPlace"), custom: t("endpoint.customPlace"), device: t("endpoint.tabDevice") };
@@ -31,12 +70,21 @@ export function useSavedText() {
   });
   return {
     names,
-    route(it: SavedItem) {
-      const n = names(it);
-      return n.end ? t("saved.route", { start: n.start, end: n.end }) : t("saved.roundTrip", { start: n.start });
+    title(it: SavedItem): { names: string; more: string | null } | null {
+      const list = stopsOf(it).map((x) => x.name ?? t("saved.unknownPlace"));
+      if (list.length === 0) return null;
+      return { names: list.slice(0, 2).join("、"), more: list.length > 2 ? t("saved.more", { n: list.length }) : null };
     },
-    trip: (it: SavedItem) => `${formatDateLabel(it.conditions.date)} ${it.conditions.depart_time}–${it.conditions.return_time}`,
-    children: (it: SavedItem) => t("saved.children", { ages: it.conditions.children_ages.join("、") }),
+    subtitle(it: SavedItem, withDate = false): string[] {
+      const n = names(it);
+      const c = it.conditions;
+      return [
+        withDate ? fullDate(c.date) : "",
+        `${c.depart_time}–${c.return_time}`,
+        n.end ? t("saved.route", { start: n.start, end: n.end }) : t("saved.roundTripShort", { start: n.start }),
+        t("saved.agesShort", { ages: c.children_ages.join("、") }),
+      ].filter(Boolean);
+    },
     stamp: (iso: string) => stampFormat.format(new Date(iso)),
   };
 }

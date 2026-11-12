@@ -17,9 +17,10 @@ from app.api.v1.saved import (
     parse_path_id,
     place_names,
     recheck,
+    stop_previews,
     stops_out,
 )
-from app.db.models import History, QueryOperation
+from app.db.models import History, HistoryStop, QueryOperation
 from app.domain.schemas import GuestImportIn
 from app.errors import ApiError
 from app.ids import parse_uuid7
@@ -77,7 +78,9 @@ async def list_histories(
 ) -> dict:
     rows, nxt = await history_svc.list_histories(st.factory, user.id, cursor, limit_)
     names = await place_names(st, [h.conditions for h in rows])
-    return {"items": [await _item(st, h, names=names) for h in rows], "next_cursor": nxt}
+    previews = await stop_previews(st, HistoryStop, "history_id", [h.id for h in rows])
+    items = [await _item(st, h, names=names) | {"stop_previews": previews.get(h.id, [])} for h in rows]
+    return {"items": items, "next_cursor": nxt}
 
 
 @router.get("/{history_id}", response_model=HistoryItem, dependencies=GENERAL, responses=HISTORY_NOT_FOUND)

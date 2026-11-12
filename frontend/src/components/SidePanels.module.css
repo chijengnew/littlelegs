@@ -1,6 +1,115 @@
 .small {
-  font-size: 12px;
-  color: var(--text-2);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.weather {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-4);
+}
+@media (min-width: 768px) {
+  .weather {
+    padding: var(--space-4) var(--space-6) var(--space-6);
+  }
+}
+.weatherTitle {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: var(--lh-h3);
+}
+.weatherStatus {
+  margin: calc(var(--space-2) * -1) 0 0;
+  color: var(--text-body);
+  font-size: var(--fs-sm);
+}
+.weather[data-status="triggered"] .weatherStatus {
+  color: var(--info);
+  font-weight: 600;
+}
+.weather[data-status="unverified"] .weatherStatus {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.meters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.meterRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px var(--space-2);
+  align-items: baseline;
+  font-size: var(--fs-sm);
+}
+.meterName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  min-width: 0;
+  font-weight: 600;
+}
+.role,
+.indoorOnly {
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.role {
+  background: var(--paper-100);
+  color: var(--text-muted);
+}
+.indoorOnly {
+  background: var(--info-bg);
+  color: var(--info);
+}
+.meterValue {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.track {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--blue-50);
+}
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-pill);
+  background: var(--blue-500);
+}
+.fill[data-high] {
+  background: var(--info);
+}
+.lodgingCard {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+@media (min-width: 768px) {
+  .lodgingCard {
+    padding: var(--space-4) var(--space-6) var(--space-4);
+  }
+}
+
+.lodgingCard p {
+  margin: 0;
+}
+
+.lodgingTitle {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: var(--lh-h3);
 }
 
 .lodging {
@@ -8,53 +117,45 @@
   margin: 0;
   padding: 0;
   display: grid;
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--radius-sm);
+}
+.lodging:focus-visible {
+  outline-offset: 2px;
 }
 .lodging li {
-  padding: 10px 0;
-  border-top: 1px solid var(--divider);
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-subtle);
 }
-.lodging li:first-child {
-  border-top: none;
-  padding-top: 0;
+.lodging li:last-child {
+  padding-bottom: var(--space-1);
 }
 
 .lodgingHead {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  font-size: 14px;
+  align-items: baseline;
+  gap: var(--space-2);
 }
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+.lodgingHead strong {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
-
-.map {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  background: var(--card);
+.lodgingHead .small {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
 }
-
-.mapArt {
-  display: block;
-  width: 100%;
-  height: auto;
-  filter: blur(0.5px);
+.lodging p {
+  margin: 0;
 }
-
-.mapText {
-  display: grid;
-  gap: 2px;
-  padding: 12px 14px;
-  font-size: 13px;
-  color: var(--text-2);
-}
-.mapText strong {
-  color: var(--text);
-  font-size: 15px;
+.lodgingFacilities {
+  color: var(--info);
+  font-size: var(--fs-sm);
+  font-weight: 600;
 }

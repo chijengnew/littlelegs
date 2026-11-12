@@ -347,6 +347,18 @@
             },
             "title": "Warnings",
             "type": "array"
+          },
+          "weather_area": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "此景點所在的 weather.areas 索引",
+            "title": "Weather Area"
           }
         },
         "required": [
@@ -1246,6 +1258,21 @@
             "description": "起點為本專案地點（place_ref）時的開放資料名稱；其他類型為 null，改用 start_label",
             "title": "Start Place Name"
           },
+          "stop_previews": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StopPreview"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "只在列表提供：依順序的景點名稱與主要類型，供卡片標題與類型圖示；開啟單筆時改看 stops",
+            "title": "Stop Previews"
+          },
           "stops": {
             "anyOf": [
               {
@@ -1660,6 +1687,21 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "stop_previews": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StopPreview"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "只在列表提供：依順序的景點名稱與主要類型，供卡片標題與類型圖示；開啟單筆時改看 stops",
+            "title": "Stop Previews"
           },
           "stops": {
             "anyOf": [
@@ -3385,6 +3427,39 @@
         "title": "StopIn",
         "type": "object"
       },
+      "StopPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "primary_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Type"
+          }
+        },
+        "required": [
+          "name",
+          "primary_type"
+        ],
+        "title": "StopPreview",
+        "type": "object"
+      },
       "Suggestion": {
         "additionalProperties": false,
         "properties": {
@@ -3819,9 +3894,102 @@
         "title": "Violation",
         "type": "object"
       },
+      "WeatherAreaOut": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "區內地址最常見的縣市＋鄉鎮市區；認不出時為 null",
+            "title": "Label"
+          },
+          "max_precipitation_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Precipitation Percent"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/WeatherPartOut"
+            },
+            "title": "Parts",
+            "type": "array"
+          },
+          "roles": {
+            "description": "此區包含起點及／或終點",
+            "items": {
+              "enum": [
+                "start",
+                "end"
+              ],
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "triggered",
+              "not_triggered",
+              "unverified"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "uncovered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Uncovered",
+            "type": "array"
+          }
+        },
+        "required": [
+          "label",
+          "roles",
+          "status",
+          "max_precipitation_percent",
+          "parts",
+          "uncovered",
+          "note"
+        ],
+        "title": "WeatherAreaOut",
+        "type": "object"
+      },
       "WeatherOut": {
         "additionalProperties": false,
         "properties": {
+          "areas": {
+            "description": "沿途分區天氣：地點彼此 10 km 內算同一區，最多 6 區，第一區含起點",
+            "items": {
+              "$ref": "#/components/schemas/WeatherAreaOut"
+            },
+            "title": "Areas",
+            "type": "array"
+          },
           "explanation": {
             "title": "Explanation",
             "type": "string"
@@ -3860,12 +4028,19 @@
             "title": "Parts",
             "type": "array"
           },
+          "rain_filter": {
+            "default": false,
+            "description": "是否勾選「下雨只排室內」",
+            "title": "Rain Filter",
+            "type": "boolean"
+          },
           "source": {
             "const": "google",
             "title": "Source",
             "type": "string"
           },
           "status": {
+            "description": "勾選「下雨只排室內」時為各區的綜合判定；沒勾選時為 not_requested，天氣只供顯示",
             "enum": [
               "triggered",
               "not_triggered",

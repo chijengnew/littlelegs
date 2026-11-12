@@ -8,6 +8,8 @@ import { PASSWORD_MAX, PASSWORD_MIN, authErrorKey, firebaseErrorCode, safeErrorC
 import { getFirebaseAuth } from "@/lib/firebaseClient";
 import GoogleButton from "./GoogleButton";
 import { continueUrl, useAuthPage } from "./useAuthPage";
+import PasswordInput from "./PasswordInput";
+import { legalLinks } from "./legalLinks";
 import ui from "../ui.module.css";
 import s from "./auth.module.css";
 
@@ -19,23 +21,19 @@ export default function RegisterForm() {
   const { auth, next, router } = useAuthPage({ hold: busy, memberTarget: inUse ? "/account?tab=account" : undefined });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const lock = useRef(false);
   const waiting = busy || googleBusy || auth.pending;
 
-  const schema = z
-    .object({
-      email: z.email(t("auth.invalidEmailForm")),
-      password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX),
-      confirm: z.string(),
-    })
-    .refine((v) => v.password === v.confirm, { message: t("auth.passwordMismatch"), path: ["confirm"] });
+  const schema = z.object({
+    email: z.email(t("auth.invalidEmailForm")),
+    password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX),
+  });
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (lock.current || waiting) return;
-    const parsed = schema.safeParse({ email: email.trim(), password, confirm });
+    const parsed = schema.safeParse({ email: email.trim(), password });
     if (!parsed.success) {
       setError(parsed.error.issues[0].message);
       return;
@@ -64,7 +62,6 @@ export default function RegisterForm() {
       if (stage === "SEND_VERIFICATION") router.replace(withNext("/verify-email", next));
     } finally {
       setPassword("");
-      setConfirm("");
       setBusy(false);
       lock.current = false;
     }
@@ -83,7 +80,9 @@ export default function RegisterForm() {
     <div className={s.wrap}>
       <section className={ui.card}>
         <h1 className={s.title}>{t("auth.registerTitle")}</h1>
-        <p className={s.lead}>{t("auth.registerDescription")}</p>
+        <p className={s.lead}>
+          {t.rich("auth.registerTerms", legalLinks)}
+        </p>
         {inUse && (
           <div className={ui.bannerInfo} role="alert" style={{ marginTop: 16 }}>
             <div>
@@ -94,6 +93,10 @@ export default function RegisterForm() {
             </div>
           </div>
         )}
+        <div className={s.google}>
+          <GoogleButton disabled={waiting} onBusy={setGoogleBusy} />
+        </div>
+        <p className={s.or}>{t("auth.or")}</p>
         <form onSubmit={submit} className={s.form} noValidate>
           <div>
             <label htmlFor="reg-email" className={ui.label}>{t("auth.email")}</label>
@@ -102,29 +105,18 @@ export default function RegisterForm() {
           </div>
           <div>
             <label htmlFor="reg-password" className={ui.label}>{t("auth.password")}</label>
-            <input id="reg-password" className={ui.input} type="password" autoComplete="new-password" required
-              minLength={PASSWORD_MIN} aria-describedby="reg-password-hint"
+            <PasswordInput id="reg-password" autoComplete="new-password" required minLength={PASSWORD_MIN}
               value={password} onChange={(e) => setPassword(e.target.value)} disabled={waiting} />
-            <p className={ui.hint} id="reg-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>
-          </div>
-          <div>
-            <label htmlFor="reg-confirm" className={ui.label}>{t("auth.confirmPassword")}</label>
-            <input id="reg-confirm" className={ui.input} type="password" autoComplete="new-password" required
-              value={confirm} onChange={(e) => setConfirm(e.target.value)} disabled={waiting} />
           </div>
           {error && <p className={ui.error} role="alert">{error}</p>}
-          <p className={ui.hint}>
-            {t("auth.privacyNotice")} <Link href="/privacy">{t("app.privacy")}</Link> · <Link href="/terms">{t("app.terms")}</Link>
-          </p>
+          <p className={ui.hint} style={{ margin: 0 }}>{t("auth.registerDescription")}</p>
           <button className={`${ui.primary} ${ui.block}`} type="submit" disabled={waiting} aria-busy={busy}>
             {busy ? t("auth.submitting") : t("auth.registerSubmit")}
           </button>
         </form>
-        <p className={s.or}>{t("auth.or")}</p>
-        <GoogleButton disabled={waiting} onBusy={setGoogleBusy} />
-        <div className={s.links}>
-          <span>{t("auth.haveAccount")} <Link href={withNext("/login", next)}>{t("auth.toLogin")}</Link></span>
-        </div>
+        <p className={s.switch}>
+          {t("auth.haveAccount")} <Link href={withNext("/login", next)}>{t("auth.toLogin")}</Link>
+        </p>
       </section>
     </div>
   );

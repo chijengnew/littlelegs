@@ -107,7 +107,7 @@ const placeDetail: S["PlaceDetailResponse"] = {
     place_id: MUSEUM.place_id,
     kind: "attraction",
     name: MUSEUM.name,
-    address: "臺北市中正區測試路2號",
+    address: "100臺北市中正區測試路2號",
     city: "臺北市",
     location: null,
     primary_type: "museum",
@@ -119,7 +119,33 @@ const placeDetail: S["PlaceDetailResponse"] = {
     removed_note: null,
   },
   sources: [],
-  evidence: { types: [], facilities: [], indoor: null, age_ranges: [], age_exclusions: [] },
+  evidence: {
+    types: [
+      { type: "museum", confirmation: "confirmed", source_type: "open_data", evidence: "文化部全國博物館資料集（主類別：博物館）", evidence_record_id: null, verified_at: null },
+      {
+        type: "env_edu",
+        confirmation: "confirmed",
+        source_type: "open_data",
+        evidence: "環境教育設施場所認證 (101)環署訓證字第EC003001-02號（至 2027/04/01）",
+        evidence_record_id: null,
+        verified_at: null,
+      },
+    ],
+    facilities: [
+      {
+        facility: "family_toilet",
+        status: "yes",
+        confirmation: "confirmed",
+        source_type: "open_data",
+        evidence: "獨立設施點位「測試博物館」（文化育樂場所）2F親子廁所；尿布臺 1、兒童座椅 0",
+        evidence_record_id: null,
+        verified_at: null,
+      },
+    ],
+    indoor: { value: "indoor", confirmation: "inferred", source_type: "open_data", evidence: "依主要類型 museum 推定，非場勘", evidence_record_id: null, verified_at: null },
+    age_ranges: [],
+    age_exclusions: [],
+  },
 };
 
 export async function mockApi(page: Page, { delayMs = 0, feedbackLimit = 100 }: { delayMs?: number; feedbackLimit?: number } = {}) {

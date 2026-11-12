@@ -27,7 +27,12 @@ export function fromMinutes(total: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-export const QUARTER_TIMES: string[] = Array.from({ length: 96 }, (_, i) => fromMinutes(i * 15));
+export const HALF_HOUR_TIMES: string[] = Array.from({ length: 48 }, (_, i) => fromMinutes(i * 30));
+
+export function timeOptions(current: string): string[] {
+  if (!current || HALF_HOUR_TIMES.includes(current)) return HALF_HOUR_TIMES;
+  return [...HALF_HOUR_TIMES, current].sort();
+}
 
 export function taipeiInstant(date: string, hhmm: string): Date {
   return new Date(`${date}T${hhmm}:00+08:00`);
@@ -45,12 +50,10 @@ export function formatClock(iso: string | null | undefined): string {
   }).format(d);
 }
 
-export function formatDateLabel(isoDate: string): string {
+export function formatMonthDay(isoDate: string): string {
   const d = new Date(`${isoDate}T12:00:00+08:00`);
-  return new Intl.DateTimeFormat("zh-TW", {
-    timeZone: TZ,
-    month: "numeric",
-    day: "numeric",
-    weekday: "short",
-  }).format(d);
+  const weekday = new Intl.DateTimeFormat("zh-TW", { timeZone: TZ, weekday: "narrow" }).format(d);
+  const [, m, day] = isoDate.split("-");
+  return `${Number(m)}/${Number(day)}（${weekday}）`;
 }
+

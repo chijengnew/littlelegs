@@ -160,3 +160,26 @@ export function fieldFromLoc(loc: string): FieldKey | null {
   }
   return "return_time";
 }
+
+export const CONDITION_STEPS = [
+  { key: "schedule", fields: ["date", "depart_time", "return_time"] },
+  { key: "route", fields: ["start", "end"] },
+  { key: "children", fields: ["children"] },
+  { key: "extras", fields: ["nap", "lunch", "dinner"] },
+] as const satisfies readonly { key: string; fields: readonly FieldKey[] }[];
+
+export const LAST_CONDITION_STEP = CONDITION_STEPS.length - 1;
+
+export function clampConditionStep(value: unknown): number {
+  return typeof value === "number" && Number.isInteger(value) ? Math.min(Math.max(value, 0), LAST_CONDITION_STEP) : 0;
+}
+
+export function stepErrors(errors: FormErrors, step: number): FormErrors {
+  const out: FormErrors = {};
+  for (const k of CONDITION_STEPS[clampConditionStep(step)].fields) if (errors[k]) out[k] = errors[k];
+  return out;
+}
+
+export function firstStepWithError(errors: FormErrors): number {
+  return CONDITION_STEPS.findIndex((s) => s.fields.some((k) => errors[k]));
+}

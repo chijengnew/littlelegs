@@ -429,6 +429,11 @@ export interface components {
             };
             /** Warnings */
             warnings: components["schemas"]["Coded"][];
+            /**
+             * Weather Area
+             * @description 此景點所在的 weather.areas 索引
+             */
+            weather_area?: number | null;
         };
         /** CandidateResponse */
         CandidateResponse: {
@@ -684,6 +689,11 @@ export interface components {
              * @description 起點為本專案地點（place_ref）時的開放資料名稱；其他類型為 null，改用 start_label
              */
             start_place_name?: string | null;
+            /**
+             * Stop Previews
+             * @description 只在列表提供：依順序的景點名稱與主要類型，供卡片標題與類型圖示；開啟單筆時改看 stops
+             */
+            stop_previews?: components["schemas"]["StopPreview"][] | null;
             /** Stops */
             stops?: components["schemas"]["SavedStop"][] | null;
         };
@@ -819,6 +829,11 @@ export interface components {
             start_place_name?: string | null;
             /** Status */
             status: string;
+            /**
+             * Stop Previews
+             * @description 只在列表提供：依順序的景點名稱與主要類型，供卡片標題與類型圖示；開啟單筆時改看 stops
+             */
+            stop_previews?: components["schemas"]["StopPreview"][] | null;
             /** Stops */
             stops?: components["schemas"]["SavedStop"][] | null;
             /** Updated At */
@@ -1355,6 +1370,13 @@ export interface components {
             /** Stay Minutes */
             stay_minutes?: number | null;
         };
+        /** StopPreview */
+        StopPreview: {
+            /** Name */
+            name: string | null;
+            /** Primary Type */
+            primary_type: string | null;
+        };
         /** Suggestion */
         Suggestion: {
             /** Google Place Id */
@@ -1489,8 +1511,39 @@ export interface components {
              */
             windows?: string[][] | null;
         };
+        /** WeatherAreaOut */
+        WeatherAreaOut: {
+            /**
+             * Label
+             * @description 區內地址最常見的縣市＋鄉鎮市區；認不出時為 null
+             */
+            label: string | null;
+            /** Max Precipitation Percent */
+            max_precipitation_percent: number | null;
+            /** Note */
+            note: string | null;
+            /** Parts */
+            parts: components["schemas"]["WeatherPartOut"][];
+            /**
+             * Roles
+             * @description 此區包含起點及／或終點
+             */
+            roles: ("start" | "end")[];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "triggered" | "not_triggered" | "unverified";
+            /** Uncovered */
+            uncovered: string[];
+        };
         /** WeatherOut */
         WeatherOut: {
+            /**
+             * Areas
+             * @description 沿途分區天氣：地點彼此 10 km 內算同一區，最多 6 區，第一區含起點
+             */
+            areas?: components["schemas"]["WeatherAreaOut"][];
             /** Explanation */
             explanation: string;
             /**
@@ -1505,12 +1558,19 @@ export interface components {
             /** Parts */
             parts: components["schemas"]["WeatherPartOut"][];
             /**
+             * Rain Filter
+             * @description 是否勾選「下雨只排室內」
+             * @default false
+             */
+            rain_filter: boolean;
+            /**
              * Source
              * @constant
              */
             source: "google";
             /**
              * Status
+             * @description 勾選「下雨只排室內」時為各區的綜合判定；沒勾選時為 not_requested，天氣只供顯示
              * @enum {string}
              */
             status: "triggered" | "not_triggered" | "unverified" | "not_requested";

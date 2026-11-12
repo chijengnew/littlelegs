@@ -1,0 +1,234 @@
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 calc(var(--gutter) * -1);
+  padding: var(--space-3) var(--gutter) calc(var(--space-3) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border-subtle);
+  background: var(--paper-50);
+}
+@media (min-width: 768px) {
+  .bar {
+    margin: 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-3);
+  }
+}
+
+.limit {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+}
+
+.count {
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+.count:focus {
+  outline: none;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.chips {
+  display: none;
+}
+
+.sort {
+  margin-left: auto;
+}
+
+@media (min-width: 1200px) {
+  .info {
+    flex: 0 0 auto;
+  }
+  .chips {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    gap: var(--space-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .view.view {
+    display: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 12em;
+  height: 40px;
+  padding: 0 6px 0 var(--space-3);
+  border: 1px solid var(--orange-500);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--orange-50) 60%, var(--surface));
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.chipName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipRemove {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.chipRemove::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.chipRemove svg {
+  width: 16px;
+  height: 16px;
+}
+.chipRemove:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--orange-500) 22%, var(--surface));
+  color: var(--text);
+}
+.chipRemove:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 359px) {
+  .info {
+    flex-basis: 100%;
+  }
+  .sort {
+    flex: 1;
+  }
+}
+
+.drawer {
+  width: 100%;
+  max-width: 100%;
+  max-height: 80dvh;
+  margin: auto 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-3);
+  overflow: hidden;
+}
+.drawer::backdrop {
+  background: var(--scrim);
+}
+@media (min-width: 768px) {
+  .drawer {
+    width: min(640px, 100%);
+    margin: auto auto 0;
+  }
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 80dvh;
+  padding: var(--space-4) var(--space-6) calc(var(--space-6) + env(safe-area-inset-bottom));
+}
+.sheet > * {
+  flex: none;
+}
+
+.sheetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sheetTitle {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+.sheetTitle:focus {
+  outline: none;
+}
+
+.close.close {
+  border-radius: var(--radius-pill);
+}
+
+.sheet > .picked {
+  flex: 0 1 auto;
+  min-height: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.picked li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.picked li:first-child {
+  border-top: 0;
+}
+
+.picked .pickedArt {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+}
+.picked .pickedArt svg {
+  width: 28px;
+  height: 28px;
+}
+
+.pickedName {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sheetSort {
+  width: 100%;
+}

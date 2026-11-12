@@ -85,8 +85,20 @@ class WeatherPartOut(Out):
     type: str | None
 
 
+class WeatherAreaOut(Out):
+    label: str | None = Field(description="區內地址最常見的縣市＋鄉鎮市區；認不出時為 null")
+    roles: list[Literal["start", "end"]] = Field(description="此區包含起點及／或終點")
+    status: Literal["triggered", "not_triggered", "unverified"]
+    max_precipitation_percent: int | None
+    parts: list[WeatherPartOut]
+    uncovered: list[str]
+    note: str | None
+
+
 class WeatherOut(Out):
-    status: Literal["triggered", "not_triggered", "unverified", "not_requested"]
+    status: Literal["triggered", "not_triggered", "unverified", "not_requested"] = Field(
+        description="勾選「下雨只排室內」時為各區的綜合判定；沒勾選時為 not_requested，天氣只供顯示"
+    )
     max_precipitation_percent: int | None
     threshold_percent: int
     location: Literal["start"]
@@ -95,6 +107,10 @@ class WeatherOut(Out):
     parts: list[WeatherPartOut]
     uncovered: list[str]
     source: Literal["google"]
+    rain_filter: bool = Field(default=False, description="是否勾選「下雨只排室內」")
+    areas: list[WeatherAreaOut] = Field(
+        default_factory=list, description="沿途分區天氣：地點彼此 10 km 內算同一區，最多 6 區，第一區含起點"
+    )
 
 
 class MapHints(Out):
@@ -130,6 +146,7 @@ class CandidateOut(Out):
     reasons: list[Coded]
     warnings: list[Coded]
     location: Location | None = None
+    weather_area: int | None = Field(default=None, description="此景點所在的 weather.areas 索引")
 
 
 class LodgingItem(Out):
@@ -326,6 +343,12 @@ class SavedStop(Out):
     location: Location | None = Field(default=None, description="開放資料座標，供會員地圖使用；地點已不存在時為 null")
 
 
+class StopPreview(Out):
+    name: str | None
+    primary_type: str | None
+
+
+STOP_PREVIEWS_DESC = "只在列表提供：依順序的景點名稱與主要類型，供卡片標題與類型圖示；開啟單筆時改看 stops"
 START_PLACE_NAME_DESC = "起點為本專案地點（place_ref）時的開放資料名稱；其他類型為 null，改用 start_label"
 END_PLACE_NAME_DESC = "終點名稱，規則同 start_place_name；終點同起點時與起點相同"
 START_LOCATION_DESC = (
@@ -349,6 +372,7 @@ class HistoryItem(Out):
     start_place_name: str | None = Field(default=None, description=START_PLACE_NAME_DESC)
     end_place_name: str | None = Field(default=None, description=END_PLACE_NAME_DESC)
     stops: list[SavedStop] | None = None
+    stop_previews: list[StopPreview] | None = Field(default=None, description=STOP_PREVIEWS_DESC)
     start_location: Location | None = Field(default=None, description=START_LOCATION_DESC)
     end_location: Location | None = Field(default=None, description=END_LOCATION_DESC)
     start_endpoint: EndpointOut | None = Field(default=None, description=START_ENDPOINT_DESC)
@@ -374,6 +398,7 @@ class FavoriteItem(Out):
     end_place_name: str | None = Field(default=None, description=END_PLACE_NAME_DESC)
     source_history_id: str | None
     stops: list[SavedStop] | None = None
+    stop_previews: list[StopPreview] | None = Field(default=None, description=STOP_PREVIEWS_DESC)
     start_location: Location | None = Field(default=None, description=START_LOCATION_DESC)
     end_location: Location | None = Field(default=None, description=END_LOCATION_DESC)
     start_endpoint: EndpointOut | None = Field(default=None, description=START_ENDPOINT_DESC)

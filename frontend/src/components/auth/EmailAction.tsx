@@ -10,6 +10,7 @@ import {
 } from "@/lib/authFlow";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { useAuth } from "../AuthProvider";
+import PasswordInput from "./PasswordInput";
 import ui from "../ui.module.css";
 import s from "./auth.module.css";
 
@@ -34,7 +35,6 @@ export default function EmailAction() {
   });
   const [next, setNext] = useState("/");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
@@ -70,9 +70,8 @@ export default function EmailAction() {
     event.preventDefault();
     if (busy || !oobCode) return;
     const parsed = z
-      .object({ password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX), confirm: z.string() })
-      .refine((v) => v.password === v.confirm, { message: t("auth.passwordMismatch") })
-      .safeParse({ password, confirm });
+      .object({ password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX) })
+      .safeParse({ password });
     if (!parsed.success) {
       setFormError(parsed.error.issues[0].message);
       return;
@@ -90,7 +89,6 @@ export default function EmailAction() {
       else setFormError(key ? t(key) : `${t("auth.loginFailed")} ${t("auth.errorCode", { code: safeErrorCode(e, "RESET") })}`);
     } finally {
       setPassword("");
-      setConfirm("");
       setBusy(false);
     }
   }
@@ -117,15 +115,10 @@ export default function EmailAction() {
         <input type="email" autoComplete="username" value={state.email} readOnly hidden />
         <div>
           <label htmlFor="reset-password" className={ui.label}>{t("auth.newPassword")}</label>
-          <input id="reset-password" className={ui.input} type="password" autoComplete="new-password" required autoFocus
+          <PasswordInput id="reset-password" autoComplete="new-password" required autoFocus
             minLength={PASSWORD_MIN} aria-describedby="reset-password-hint"
             value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy} />
           <p className={ui.hint} id="reset-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>
-        </div>
-        <div>
-          <label htmlFor="reset-confirm" className={ui.label}>{t("auth.confirmPassword")}</label>
-          <input id="reset-confirm" className={ui.input} type="password" autoComplete="new-password" required
-            value={confirm} onChange={(e) => setConfirm(e.target.value)} disabled={busy} />
         </div>
         {formError && <p className={ui.error} role="alert">{formError}</p>}
         <button className={`${ui.primary} ${ui.block}`} type="submit" disabled={busy} aria-busy={busy}>
@@ -164,10 +157,10 @@ export default function EmailAction() {
   }
 
   return (
-    <div className={s.wrap}>
+    <div className={s.wrapStatus}>
       <section className={ui.card}>
         <h1 className={s.title}>{title}</h1>
-        <div style={{ display: "grid", gap: 12, marginTop: 12 }}>{body}</div>
+        <div className={s.stateBody}>{body}</div>
       </section>
     </div>
   );

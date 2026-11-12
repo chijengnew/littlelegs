@@ -50,6 +50,26 @@ async def stops_out(st: AppState, stops, reasons: dict | None) -> list[dict]:
     return out
 
 
+async def stop_previews(st: AppState, model, owner: str, ids: list[uuid.UUID]) -> dict[uuid.UUID, list[dict]]:
+    """列表用的景點摘要（名稱、主要類型），依順序一次查完，不呼叫 Google。"""
+    if not ids:
+        return {}
+    key = getattr(model, owner)
+    async with st.factory() as s:
+        rows = (
+            await s.execute(
+                select(key, Place.name, Place.primary_type)
+                .join(Place, Place.id == model.place_id)
+                .where(key.in_(ids))
+                .order_by(key, model.order_index)
+            )
+        ).all()
+    out: dict[uuid.UUID, list[dict]] = {i: [] for i in ids}
+    for owner_id, name, primary_type in rows:
+        out[owner_id].append({"name": name, "primary_type": primary_type})
+    return out
+
+
 def _place_ref_id(ep: object) -> str | None:
     if isinstance(ep, dict) and ep.get("type") == "place_ref" and isinstance(ep.get("place_id"), str):
         return ep["place_id"]

@@ -1,43 +1,66 @@
 .header {
   position: sticky;
   top: 0;
-  z-index: 50;
-  height: var(--header-h);
-  background: var(--card);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  z-index: var(--z-header);
+  background: var(--paper-50);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .inner {
-  max-width: 1200px;
-  height: 100%;
+  max-width: calc(var(--content-max) + 2 * var(--gutter));
+  min-height: calc(var(--header-h) - 1px);
   margin: 0 auto;
-  padding: 0 16px;
+  padding: var(--space-1) var(--gutter);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: var(--blue);
+  gap: 10px;
+  min-height: var(--control-h-compact);
+  color: var(--ink-900);
+  text-decoration: none;
 }
 .brand:hover {
   text-decoration: none;
 }
 
-.logo {
-  display: flex;
-}
-
 .word {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-family: var(--font-nunito), system-ui, sans-serif;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.actions .planEntry {
+  min-height: var(--control-h-compact);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm);
+}
+
+@media (max-width: 359px) {
+  .word {
+    display: none;
+  }
+}
+
+.placeholder {
+  display: inline-block;
+  width: var(--control-h-compact);
+  height: var(--control-h-compact);
+  border-radius: 50%;
+  border: 1.5px solid var(--border-subtle);
 }

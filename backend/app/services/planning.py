@@ -23,7 +23,8 @@ from app.domain.scheduler import UNVERIFIED_WARNINGS, Leg, Problem, Solution, St
 from app.domain.schemas import Conditions, StopIn
 from app.domain.solver_runner import SolverTimeout, run_solver
 from app.domain.validation import check_departure_future, check_new_search_date, departure
-from app.domain.weather import WeatherJudgement, describe_uncovered, judge, request_params
+from app.domain.weather import THRESHOLD, WeatherJudgement, describe_uncovered, judge, request_params
+from app.domain.weather_areas import Area, AreaPoint, district_of, group_points
 from app.errors import ApiError
 from app.external.google import Deadline, GoogleError, MatrixElement
 from app.geo import haversine_m
@@ -53,6 +54,7 @@ SOURCE_MAP_CANDIDATES = {
     "candidates[].age": "open_data|manual|system",
     "candidates[].distance_m": "system",
     "candidates[].default_stay": "open_data|system",
+    "candidates[].weather_area": "system",
     "weather": "google",
     "lodging[].name": "open_data",
     "lodging[].family_facilities": "open_data|manual",
@@ -83,9 +85,42 @@ class Ctx:
 
 
 @dataclass
+class AreaWeather:
+    area: Area
+    judgement: WeatherJudgement
+    ok: bool
+
+
+@dataclass
 class WeatherResult:
     judgement: WeatherJudgement | None
     external_failed: bool = False
+    areas: list[AreaWeather] = field(default_factory=list)
+    rain_filter: bool = False
+    index: dict[str, int] = field(default_factory=dict)
+
+    def area_of(self, key: str) -> int | None:
+        return self.index.get(key)
+
+    def status_for(self, key: str) -> str:
+        i = self.index.get(key)
+        if i is not None:
+            return self.areas[i].judgement.status
+        return self.judgement.status if self.judgement else "not_requested"
+
+    def triggered_for(self, key: str) -> bool:
+        return self.rain_filter and self.status_for(key) == "triggered"
+
+    @property
+    def used_google(self) -> bool:
+        return any(x.judgement.parts for x in self.areas) or (self.judgement is not None and bool(self.judgement.parts))
+
+
+def _area_points(start: ResolvedEndpoint, end: ResolvedEndpoint, places: list[PlaceData]) -> list[AreaPoint]:
+    pts = [AreaPoint("start", start.lat, start.lon, district_of(start.place_address))]
+    pts += [AreaPoint(p.ref, p.lat, p.lon, district_of(p.address, p.city)) for p in places]
+    pts.append(AreaPoint("end", end.lat, end.lon, district_of(end.place_address)))
+    return pts
 
 
 async def _resolve_endpoints(ctx: Ctx, c: Conditions) -> tuple[ResolvedEndpoint, ResolvedEndpoint]:
@@ -97,20 +132,35 @@ async def _resolve_endpoints(ctx: Ctx, c: Conditions) -> tuple[ResolvedEndpoint,
     return start, end
 
 
-async def _weather(ctx: Ctx, c: Conditions, lat: float, lon: float) -> WeatherResult:
-    """只在勾選「下雨只排室內」時查詢起點一個位置；今天起第 10 天以後不呼叫。"""
-    if not c.rain_indoor_only:
-        return WeatherResult(None)
+async def _weather(ctx: Ctx, c: Conditions, points: list[AreaPoint]) -> WeatherResult:
+    """出遊日在今天起 10 天內就查沿途天氣，不論是否勾選「下雨只排室內」；今天起第 10 天以後不呼叫。
+
+    地點依距離分成最多 6 區、每區一次每日預報。勾選時各地點依所在區判斷是否只排室內，
+    查詢失敗的區標為 unverified 並使結果成為 partial；沒勾選時失敗的區直接不列出。
+    """
+    rain = c.rain_indoor_only
     params = request_params(c.date, ctx.today)
     if params is None:
-        return WeatherResult(judge(None, c.date, c.t_depart, c.t_return, requested=False))
-    if ctx.st.google is None:
-        return WeatherResult(judge(None, c.date, c.t_depart, c.t_return), external_failed=True)
-    try:
-        days = await ctx.st.google.daily_forecast(lat, lon, params["days"], params["pageSize"], ctx.deadline)
-        return WeatherResult(judge(days, c.date, c.t_depart, c.t_return), external_failed=days is None)
-    except (GoogleError, QuotaExceeded):
-        return WeatherResult(judge(None, c.date, c.t_depart, c.t_return), external_failed=True)
+        if not rain:
+            return WeatherResult(None)
+        return WeatherResult(judge(None, c.date, c.t_depart, c.t_return, requested=False), rain_filter=True)
+
+    async def lookup(a: Area) -> AreaWeather:
+        days: list[dict] | None = None
+        if ctx.st.google is not None:
+            try:
+                days = await ctx.st.google.daily_forecast(
+                    a.lat, a.lon, params["days"], params["pageSize"], ctx.deadline
+                )
+            except (GoogleError, QuotaExceeded):
+                days = None
+        return AreaWeather(a, judge(days, c.date, c.t_depart, c.t_return), days is not None)
+
+    found = list(await asyncio.gather(*(lookup(a) for a in group_points(points))))
+    failed = any(not x.ok for x in found)
+    areas = found if rain else [x for x in found if x.ok]
+    index = {k: i for i, x in enumerate(areas) for k in x.area.keys}
+    return WeatherResult(None, rain and failed, areas, rain, index)
 
 
 async def _mark_place_id_not_found(ctx: Ctx, place_id: uuid.UUID) -> None:
@@ -208,23 +258,64 @@ def _hours_out(info: OpeningInfo | None) -> dict | None:
     }
 
 
-def _weather_out(w: WeatherResult) -> dict | None:
-    j = w.judgement
-    if j is None:
-        return None
+def _parts_out(j: WeatherJudgement) -> list[dict]:
+    return [
+        {"label": p.label, "start": _iso(p.start), "end": _iso(p.end), "percent": p.percent, "type": p.ptype}
+        for p in j.parts
+    ]
+
+
+def _weather_out(w: WeatherResult, keep: list[int] | None = None) -> dict | None:
+    """頂層欄位沿用舊格式（parts 為起點所在區）；areas 為沿途分區，keep 指定要列出的區。"""
+    shown = w.areas if keep is None else [w.areas[i] for i in keep]
+    if not shown:
+        j = w.judgement
+        if j is None:
+            return None
+        return {
+            "status": j.status,
+            "max_precipitation_percent": j.max_percent,
+            "threshold_percent": THRESHOLD,
+            "location": "start",
+            "note": j.note,
+            "explanation": "含其他降水，各區以日間／夜間預報判斷",
+            "parts": _parts_out(j),
+            "uncovered": describe_uncovered(j),
+            "source": "google",
+            "rain_filter": w.rain_filter,
+            "areas": [],
+        }
+    js = [x.judgement for x in shown]
+    if any(j.status == "triggered" for j in js):
+        status = "triggered"
+    elif any(j.status == "unverified" for j in js):
+        status = "unverified"
+    else:
+        status = "not_triggered"
+    first = js[0]
     return {
-        "status": j.status,
-        "max_precipitation_percent": j.max_percent,
-        "threshold_percent": 60,
+        "status": status if w.rain_filter else "not_requested",
+        "max_precipitation_percent": max((j.max_percent for j in js if j.max_percent is not None), default=None),
+        "threshold_percent": THRESHOLD,
         "location": "start",
-        "note": j.note,
-        "explanation": "含其他降水，以起點日間／夜間預報判斷",
-        "parts": [
-            {"label": p.label, "start": _iso(p.start), "end": _iso(p.end), "percent": p.percent, "type": p.ptype}
-            for p in j.parts
-        ],
-        "uncovered": describe_uncovered(j),
+        "note": first.note,
+        "explanation": "含其他降水，各區以日間／夜間預報判斷",
+        "parts": _parts_out(first),
+        "uncovered": describe_uncovered(first),
         "source": "google",
+        "rain_filter": w.rain_filter,
+        "areas": [
+            {
+                "label": x.area.label,
+                "roles": [r for r in ("start", "end") if r in x.area.keys],
+                "status": x.judgement.status,
+                "max_precipitation_percent": x.judgement.max_percent,
+                "parts": _parts_out(x.judgement),
+                "uncovered": describe_uncovered(x.judgement),
+                "note": x.judgement.note,
+            }
+            for x in shown
+        ],
     }
 
 
@@ -297,20 +388,26 @@ async def _candidate_core(ctx: Ctx, c: Conditions) -> dict:
             continue
         evals.append(ev)
 
-    weather = await _weather(ctx, c, start.lat, start.lon)
-    google_used |= weather.judgement is not None and bool(weather.judgement.parts)
-    if weather.judgement is not None and weather.judgement.indoor_only:
-        evals = [e for e in evals if e.indoor_state in ("indoor_confirmed", "indoor_inferred")]
+    near_first = sorted(evals, key=lambda e: e.distance_m)
+    weather = await _weather(ctx, c, _area_points(start, end, [e.place for e in near_first]))
+    google_used |= weather.used_google
+    evals = [
+        e
+        for e in evals
+        if not weather.triggered_for(e.place.ref) or e.indoor_state in ("indoor_confirmed", "indoor_inferred")
+    ]
     evals.sort(key=ranking.initial_rank_key)
     top = evals[:CANDIDATE_TOP]
     top.sort(key=ranking.rerank_key)
 
-    wstatus = weather.judgement.status if weather.judgement else "not_requested"
+    keys = ["start", "end", *(e.place.ref for e in top)]
+    keep = sorted({i for k in keys if (i := weather.area_of(k)) is not None})
+    pos = {i: n for n, i in enumerate(keep)}
     out = []
     for ev in top:
         p = ev.place
         reasons, warnings = ranking.reasons_and_warnings(
-            ev, weather_status=wstatus, rain_checked=c.rain_indoor_only, hours_checked=False
+            ev, weather_status=weather.status_for(p.ref), rain_checked=c.rain_indoor_only, hours_checked=False
         )
         stay, stay_src = default_stay(p, None)
         item = {
@@ -333,6 +430,8 @@ async def _candidate_core(ctx: Ctx, c: Conditions) -> dict:
             "reasons": _reason_objs(reasons, ev.facility_hits),
             "warnings": _warn_objs(set(warnings)),
         }
+        area = weather.area_of(p.ref)
+        item["weather_area"] = None if area is None else pos[area]
         if member:
             item["location"] = {"lat": p.lat, "lng": p.lon, "source": "open_data"}
         out.append(item)
@@ -343,7 +442,7 @@ async def _candidate_core(ctx: Ctx, c: Conditions) -> dict:
         "operation": operation,
         "start": _endpoint_out(start, member),
         "end": _endpoint_out(end, member),
-        "weather": _weather_out(weather),
+        "weather": _weather_out(weather, keep),
         "candidates": out,
         "candidate_count": len(out),
         "lodging": lodging_out,
@@ -450,7 +549,7 @@ async def _plan_core(ctx: Ctx, c: Conditions, stops: list[StopPlan], mode: str) 
         except (GoogleError, QuotaExceeded):
             return None, True
 
-    weather_t = asyncio.create_task(_weather(ctx, c, start.lat, start.lon))
+    weather_t = asyncio.create_task(_weather(ctx, c, _area_points(start, end, [sp.place for sp in stops])))
     hours_t = asyncio.create_task(_hours(ctx, [sp.place for sp in stops], c.date))
     matrix_t = asyncio.create_task(matrix())
     weather = await weather_t
@@ -462,9 +561,8 @@ async def _plan_core(ctx: Ctx, c: Conditions, stops: list[StopPlan], mode: str) 
         for (i, j), el in mat.items():
             legs[(i, j)] = Leg(el.status, el.seconds, el.meters)
 
-    triggered = weather.judgement is not None and weather.judgement.indoor_only
     gw: set[str] = set()
-    if c.rain_indoor_only and (weather.judgement is None or weather.judgement.status == "unverified"):
+    if c.rain_indoor_only and any(weather.status_for(sp.place.ref) == "unverified" for sp in stops):
         gw.add("weather_unverified")
     specs = []
     start_dist_src = start.coord_source
@@ -478,7 +576,7 @@ async def _plan_core(ctx: Ctx, c: Conditions, stops: list[StopPlan], mode: str) 
         viol: set[str] = set()
         if ev.age == "unsuitable":
             viol.add("AGE_UNSUITABLE")
-        if triggered:
+        if weather.triggered_for(p.ref):
             if ev.indoor_state == "indoor_inferred":
                 warns.add("indoor_inferred")
             elif ev.indoor_state != "indoor_confirmed":
@@ -570,11 +668,7 @@ def _plan_response(ctx: Ctx, o: PlanOutcome, query_id: str, history: dict | None
         if member:
             it["location"] = {"lat": sp.place.lat, "lng": sp.place.lon, "source": "open_data"}
         stops_out.append(it)
-    google_used = (
-        bool(sol.items)
-        or any(h.status != "unknown" for h in o.hours.values())
-        or (o.weather.judgement is not None and bool(o.weather.judgement.parts))
-    )
+    google_used = bool(sol.items) or any(h.status != "unknown" for h in o.hours.values()) or o.weather.used_google
     return {
         "query_id": query_id,
         "mode": mode,

@@ -62,7 +62,7 @@ async def test_guest_candidates_no_history_no_coords(env):
     assert body["lodging"]["items"][0]["family_facilities"] == ["crib"]
     assert await count(st, History) == 0
     assert "matrix" not in " ".join(st.google.calls)
-    assert "weather" not in st.google.calls and body["weather"] is None
+    assert "weather" in st.google.calls and body["weather"] is None
     assert "place_hours" not in st.google.calls
     for x in body["candidates"]:
         assert "hours" not in x
@@ -107,9 +107,30 @@ async def test_rain_indoor_only_filters_to_indoor(env):
     ]
     r = await c.post("/v1/trips/candidates", json={"query_id": v7(), "conditions": cond(rain_indoor_only=True)})
     body = r.json()
-    assert body["weather"]["status"] == "triggered"
+    assert body["weather"]["status"] == "triggered" and body["weather"]["rain_filter"] is True
+    assert body["weather"]["areas"][0]["roles"][0] == "start"
     assert {x["name"] for x in body["candidates"]} == {"兒童探索博物館", "糖果觀光工廠"}
     assert all(any(w["code"] == "indoor_inferred" for w in x["warnings"]) for x in body["candidates"])
+    assert all(x["weather_area"] is not None for x in body["candidates"])
+
+
+async def test_weather_shown_without_rain_filter(env):
+    c, st = env["client"], env["st"]
+    st.google.forecast = [
+        {
+            "daytimeForecast": {
+                "interval": {"startTime": "2026-10-21T23:00:00Z", "endTime": "2026-10-22T11:00:00Z"},
+                "precipitation": {"probability": {"percent": 80, "type": "RAIN"}},
+            },
+        }
+    ]
+    r = await c.post("/v1/trips/candidates", json={"query_id": v7(), "conditions": cond()})
+    body = r.json()
+    assert body["operation"] == "ok"
+    assert body["weather"]["status"] == "not_requested" and body["weather"]["rain_filter"] is False
+    assert body["weather"]["areas"][0]["max_precipitation_percent"] == 80
+    assert {x["name"] for x in body["candidates"]} == {"兒童探索博物館", "森林親子公園", "糖果觀光工廠"}
+    assert all(x["weather_area"] is not None for x in body["candidates"])
 
 
 async def test_departure_passed_and_invalid_input(env):
@@ -145,7 +166,7 @@ async def test_sort_check_revision_flow(env):
     )
     assert s1.status_code == 200, s1.text
     b = s1.json()
-    assert "weather" not in st.google.calls and b["weather"] is None
+    assert "weather" in st.google.calls and b["weather"] is None
     assert b["feasibility"] == "feasible"
     assert any(w["code"] == "special_hours_unverified" for w in b["warnings"])
     assert b["history"]["revision"] == rev + 1
@@ -373,6 +394,10 @@ async def test_delete_history_keeps_favorite_and_blocks_replay(env):
     assert g["end_location"] == g["start_location"]
     assert g["stops"][0]["google_place_id"].startswith("ChIJ")
     assert g["stops"][0]["primary_type"]
+    listed = (await c.get("/v1/favorites", headers=auth())).json()["items"][0]
+    assert listed["stop_previews"] == [{"name": g["stops"][0]["name"], "primary_type": g["stops"][0]["primary_type"]}]
+    assert listed.get("stops") is None
+    assert g.get("stop_previews") is None
     assert g["start_endpoint"]["coordinate"] == {"lat": 25.033, "lng": 121.5654}
     assert g["end_endpoint"] == g["start_endpoint"]
     replay = await c.post("/v1/trips/candidates", json={"query_id": qid, "conditions": cond()}, headers=auth())
@@ -389,6 +414,7 @@ async def test_cross_user_access_and_pagination(env):
     assert len(nxt.json()["items"]) == 1
     hid = lst.json()["items"][0]["id"]
     assert lst.json()["items"][0]["start_place_name"] is None
+    assert lst.json()["items"][0]["stop_previews"] == []
     assert (await c.get(f"/v1/histories/{hid}", headers=auth("intruder"))).status_code == 404
     assert (await c.get("/v1/histories?limit=51", headers=auth())).status_code == 422
     assert (await c.get("/v1/histories?limit=0", headers=auth())).status_code == 422

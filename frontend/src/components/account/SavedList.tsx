@@ -5,12 +5,17 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api/client";
 import { toUiError } from "@/lib/api/problem";
+import StatePanel from "../StatePanel";
 import { SkeletonList } from "../Skeleton";
-import { detailHref, isFavorite, useSavedText, type Kind, type SavedItem } from "./savedText";
+import PlaceArt from "../art/PlaceArt";
+import Segments from "./Segments";
+import StopsTitle from "./StopsTitle";
+import { dateTile, detailHref, isFavorite, isPast, statusOf, stopTypes, useSavedText, type Kind, type SavedItem } from "./savedText";
 import ui from "../ui.module.css";
 import s from "./account.module.css";
 
 const PAGE_SIZE = 15;
+const TONE = { green: ui.chipGreen, amber: ui.chipAmber, red: ui.chipRed };
 type Page = { items: SavedItem[]; next: string | null } | { error: string };
 type T = ReturnType<typeof useTranslations>;
 
@@ -63,44 +68,68 @@ export default function SavedList({ kind }: { kind: Kind }) {
   if (!items) {
     if (!error) return <div className={s.section} aria-busy="true"><SkeletonList count={3} lines={2} /></div>;
     return (
-      <div className={`${ui.bannerError} ${s.section}`} role="alert">
-        <span>{t("saved.loadFailed")} {error}</span>
-        <button type="button" className={ui.soft} onClick={() => load(null)} disabled={busy}>{t("saved.retry")}</button>
-      </div>
+      <StatePanel
+        tone="error"
+        inline
+        live="alert"
+        title={t("saved.loadFailed")}
+        description={<p>{error}</p>}
+        actions={<button type="button" className={ui.primary} onClick={() => load(null)} disabled={busy}>{t("saved.retry")}</button>}
+      />
     );
   }
   if (items.length === 0) {
-    return <p className={`${ui.card} ${s.section}`}>{t(kind === "history" ? "saved.historyEmpty" : "saved.favoritesEmpty")}</p>;
+    return (
+      <StatePanel
+        tone="empty"
+        inline
+        title={t(kind === "history" ? "saved.historyEmptyTitle" : "saved.favoritesEmptyTitle")}
+        description={<p>{t(kind === "history" ? "saved.historyEmpty" : "saved.favoritesEmpty")}</p>}
+        actions={<Link className={ui.primary} href="/planner">{t("app.startPlanning")}</Link>}
+      />
+    );
   }
   return (
     <>
       <ul className={s.list}>
-        {items.map((it) => (
-          <li key={it.id}>
-            <Link href={detailHref(kind, it.id)} className={`${ui.card} ${s.item}`}>
-              <div className={s.itemTitle}>{text.route(it)}</div>
-              <div className={s.meta}>
-                <span>{text.trip(it)}</span>
-                <span>{text.children(it)}</span>
-                {isFavorite(it) ? (
-                  <span className={it.saved_as === "plan" ? ui.chipBlue : ui.chipAmber}>{t(`saved.savedAs.${it.saved_as}`)}</span>
-                ) : (
-                  <>
-                    <span className={it.status === "failed" ? ui.chipRed : ui.chip}>
-                      {t.has(`saved.status.${it.status}`) ? t(`saved.status.${it.status}`) : it.status}
+        {items.map((it) => {
+          const day = dateTile(it.conditions.date);
+          const past = isPast(it.conditions.date);
+          const title = text.title(it);
+          const status = statusOf(it);
+          const types = stopTypes(it);
+          return (
+            <li key={it.id}>
+              <Link href={detailHref(kind, it.id)} className={s.item}>
+                <span className={past ? `${s.dateTile} ${s.datePast}` : s.dateTile}>
+                  <span className={s.dateMonth}>{t("saved.tileMonth", { m: day.month })}</span>
+                  <span className={s.dateDay}>{day.day}</span>
+                  <span className={s.dateWeek}>{past ? t("saved.expired") : day.weekday}</span>
+                </span>
+                <span className={s.itemBody}>
+                  <span className={title ? s.itemTitle : `${s.itemTitle} ${s.itemTitleEmpty}`}>{title ? <StopsTitle title={title} /> : t("saved.noStops")}</span>
+                  <span className={`${s.itemMeta} ${s.itemSub}`}>
+                    <Segments items={text.subtitle(it)} />
+                  </span>
+                  <span className={s.itemMeta}>
+                    {status && <span className={TONE[status.tone]}>{t(status.key)}</span>}
+                    <span className={s.stamp}>
+                      {isFavorite(it)
+                        ? t("saved.createdAt", { date: text.stamp(it.created_at) })
+                        : t("saved.updatedAt", { date: text.stamp(it.updated_at) })}
                     </span>
-                    {it.plan_ordered && <span className={ui.chipGreen}>{t("saved.ordered")}</span>}
-                  </>
+                  </span>
+                </span>
+                {types.length > 0 && (
+                  <span className={s.typeIcons} aria-hidden="true">
+                    {types.map((x) => <PlaceArt key={x} type={x} className={s.typeIcon} />)}
+                  </span>
                 )}
-              </div>
-              <div className={s.meta}>
-                {isFavorite(it)
-                  ? t("saved.createdAt", { date: text.stamp(it.created_at) })
-                  : t("saved.updatedAt", { date: text.stamp(it.updated_at) })}
-              </div>
-            </Link>
-          </li>
-        ))}
+                <span className={s.chevron} aria-hidden="true">›</span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
       {error && <p className={ui.error} role="alert">{t("saved.loadFailed")} {error}</p>}
       {next && (

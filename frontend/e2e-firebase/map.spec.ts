@@ -8,12 +8,16 @@ test("已驗證會員：候選頁與行程頁顯示 Google 地圖，2 個景點�
   test.skip(!verified.email || !verified.password, "未設定 E2E_VERIFIED_EMAIL／E2E_VERIFIED_PASSWORD");
   test.setTimeout(120_000);
   await login(page, verified);
-  await expect(page.getByRole("banner").getByRole("link", { name: "會員" })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("button", { name: "帳號選單（會員）", exact: true })).toBeVisible();
+  await page.goto("/planner");
 
+  await page.getByRole("button", { name: "下一步" }).click();
   await page.getByRole("group", { name: "起點" }).getByRole("searchbox").fill(START_QUERY);
   await page.getByRole("button", { name: new RegExp(escape(START_QUERY)) }).first().click();
-  await page.getByLabel("第 1 位孩子年齡").selectOption("4");
   await page.getByLabel("終點同起點").check();
+  await page.getByRole("button", { name: "下一步" }).click();
+  await page.getByLabel("第 1 位孩子年齡").selectOption("4");
+  await page.getByRole("button", { name: "下一步" }).click();
   await page.getByRole("button", { name: "搜尋候選景點" }).click();
   const boxes = page.getByRole("checkbox", { name: /^選擇/ });
   await expect(boxes.first()).toBeVisible({ timeout: 30_000 });

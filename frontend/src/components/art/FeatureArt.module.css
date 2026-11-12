@@ -1,0 +1,44 @@
+.tile {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-md);
+}
+
+.blue {
+  background: var(--blue-50);
+}
+.sun {
+  background: var(--sun-50);
+}
+
+.svg {
+  display: block;
+  width: 52px;
+  height: 52px;
+}
+
+@media (max-width: 479px) {
+  .tile {
+    width: 60px;
+    height: 60px;
+  }
+  .svg {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .tile {
+    width: 96px;
+    height: 96px;
+    border-radius: var(--radius-lg);
+  }
+  .svg {
+    width: 68px;
+    height: 68px;
+  }
+}

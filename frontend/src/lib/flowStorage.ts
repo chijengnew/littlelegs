@@ -14,6 +14,9 @@ export type StoredFlow = {
   step?: "conditions" | "candidates" | "plan";
   planMode?: "sort" | "check";
   dirty?: boolean;
+  conditionStep?: number;
+  returnToSummary?: boolean;
+  edited?: boolean;
 };
 
 export function loadFlow(): StoredFlow | null {

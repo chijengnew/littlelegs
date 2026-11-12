@@ -6,7 +6,7 @@ import type { Schemas } from "@/lib/api/client";
 import { boundsOf, type EndpointTitles, type MapPoint, type MapScene } from "@/lib/mapData";
 import { isMapConfigured, loadMaps, mapId, onMapAuthFailure, type GMap, type GMarker, type GPolyline, type Libraries } from "@/lib/maps";
 import { useAuth } from "./AuthProvider";
-import { LockedMap } from "./SidePanels";
+import { MapIcon } from "./icons";
 import s from "./MemberMap.module.css";
 
 const PIN_CLASS: Record<MapPoint["kind"], string> = {
@@ -24,11 +24,30 @@ type Props = {
   legend?: "candidates" | "plan";
 };
 
+export type MapState = "ready" | "locked" | "stale" | "pending";
+
+export function mapStateOf(member: boolean, hints: Schemas["MapHints"] | undefined): MapState {
+  if (!member) return "locked";
+  if (hints && hints.mode !== "google_map") return "stale";
+  if (!isMapConfigured()) return "pending";
+  return "ready";
+}
+
+export function MapHint({ className = "" }: { className?: string }) {
+  const t = useTranslations("map");
+  return (
+    <p className={`${s.hint} ${className}`}>
+      <MapIcon size={16} />
+      {t("hintLocked")}
+    </p>
+  );
+}
+
 export default function MapPanel({ hints, scene, legend }: Props) {
   const { member } = useAuth();
-  if (!member) return <LockedMap variant="locked" message={hints?.message} />;
-  if (hints && hints.mode !== "google_map") return <LockedMap variant="stale" />;
-  if (!isMapConfigured()) return <LockedMap variant="pending" />;
+  const state = mapStateOf(Boolean(member), hints);
+  if (state === "locked") return <MapHint />;
+  if (state !== "ready") return null;
   return <MemberMap scene={hints ? scene : null} lineNote={hints?.connect_line && scene?.path ? hints.line_note : null} legend={legend} />;
 }
 
@@ -116,7 +135,7 @@ function MemberMap({ scene, lineNote, legend }: { scene: MapScene | null; lineNo
           geodesic: false,
           clickable: false,
           strokeOpacity: 0,
-          icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 0.9, strokeColor: "#1877f2", scale: 3 }, offset: "0", repeat: "14px" }],
+          icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 0.9, strokeColor: lineColor(box.current), scale: 3 }, offset: "0", repeat: "14px" }],
         })
       : null;
     const keys = scene.points.map((p) => p.key).join("|");
@@ -187,6 +206,10 @@ function MemberMap({ scene, lineNote, legend }: { scene: MapScene | null; lineNo
       )}
     </section>
   );
+}
+
+function lineColor(el: HTMLElement | null): string {
+  return (el && getComputedStyle(el).getPropertyValue("--map-line").trim()) || "#34373c";
 }
 
 function Legend({ cls, label }: { cls: string; label: string }) {

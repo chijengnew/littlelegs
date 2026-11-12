@@ -10,6 +10,7 @@ import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { SkeletonCard } from "../Skeleton";
 import SignOutButton from "./SignOutButton";
 import { continueUrl, useAuthPage } from "./useAuthPage";
+import { MailIcon } from "../icons";
 import ui from "../ui.module.css";
 import s from "./auth.module.css";
 
@@ -176,10 +177,11 @@ export default function VerifyEmail() {
   }
 
   return (
-    <div className={s.wrap}>
+    <div className={s.wrapStatus}>
       <section className={ui.card}>
+        <span className={s.stateIcon} aria-hidden="true"><MailIcon size={28} /></span>
         <h1 className={s.title}>{t("auth.verifyTitle")}</h1>
-        <div style={{ display: "grid", gap: 12, marginTop: 12 }}>{body}</div>
+        <div className={s.stateBody}>{body}</div>
       </section>
     </div>
   );

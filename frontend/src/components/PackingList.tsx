@@ -13,6 +13,7 @@ import {
   type PackingState,
 } from "@/lib/packingStorage";
 import { useAuth } from "./AuthProvider";
+import { ArrowDownIcon, CloseIcon } from "./icons";
 import ui from "./ui.module.css";
 import s from "./PackingList.module.css";
 
@@ -31,6 +32,7 @@ export default function PackingList({ listId, ages, hasNap, primaryTypes, classN
   const owner = auth.member && auth.user ? auth.user.uid : null;
   const [loaded, setLoaded] = useState<{ key: string; state: PackingState } | null>(null);
   const [draft, setDraft] = useState("");
+  const [open, setOpen] = useState(false);
   const key = `${owner ?? ""}|${listId}`;
 
   useEffect(() => {
@@ -87,72 +89,81 @@ export default function PackingList({ listId, ages, hasNap, primaryTypes, classN
         <input type="checkbox" checked={current.checked.includes(id)} onChange={() => toggle(id)} />
         <span>{label}</span>
       </label>
-      <button type="button" className={ui.icon} onClick={onRemove} aria-label={t("remove", { name: label })}>
-        ×
+      <button type="button" className={`${ui.iconQuiet} ${s.remove}`} onClick={onRemove} aria-label={t("remove", { name: label })}>
+        <CloseIcon size={16} />
       </button>
     </li>
   );
 
   return (
     <section className={`${ui.card} ${s.card} ${className}`} aria-labelledby="packing-title">
-      <div className={s.head}>
-        <h2 className={ui.cardTitle} id="packing-title" style={{ margin: 0 }}>
-          {t("title")}
-        </h2>
-        <span className={ui.chip}>{t("progress", { done, total: ids.length })}</span>
-      </div>
-      <p className={ui.hint} style={{ margin: 0 }}>
-        {t("hint")}
-      </p>
-      <label className={s.check}>
-        <input
-          type="checkbox"
-          checked={current.expectRain}
-          onChange={(e) => update({ ...current, expectRain: e.target.checked })}
-        />
-        <span>{t("expectRain")}</span>
-      </label>
-      {visible.map((g) => (
-        <div key={g.group}>
-          <h3 className={s.groupTitle}>{t(`groups.${g.group}`)}</h3>
-          <ul className={s.items}>{g.items.map((x) => row(x.id, t(`items.${x.labelKey}`), () => remove(x.id)))}</ul>
-        </div>
-      ))}
-      {current.custom.length > 0 && (
-        <div>
-          <h3 className={s.groupTitle}>{t("groups.custom")}</h3>
-          <ul className={s.items}>{current.custom.map((x) => row(x.id, x.label, () => removeCustom(x.id)))}</ul>
-        </div>
-      )}
-      {current.removed.length > 0 && (
+      <h2 className={s.headTitle} id="packing-title">
         <button
           type="button"
-          className={ui.soft}
-          style={{ justifySelf: "start" }}
-          onClick={() => update({ ...current, removed: [] })}
+          className={s.toggle}
+          aria-expanded={open}
+          aria-controls={`packing-body-${listId}`}
+          onClick={() => setOpen((v) => !v)}
         >
-          {t("restore", { n: current.removed.length })}
+          <span className={s.toggleText}>{t("title")}</span>
+          <span className={ui.chip}>{done > 0 ? t("progress", { done, total: ids.length }) : t("count", { n: ids.length })}</span>
+          <ArrowDownIcon className={s.chevron} />
         </button>
-      )}
-      <form className={s.addForm} onSubmit={add}>
-        <label className="visually-hidden" htmlFor={`packing-add-${listId}`}>
-          {t("customLabel")}
+      </h2>
+      <div id={`packing-body-${listId}`} className={s.body} hidden={!open}>
+        <p className={ui.hint} style={{ margin: 0 }}>
+          {t("hint")}
+        </p>
+        <label className={s.check}>
+          <input
+            type="checkbox"
+            checked={current.expectRain}
+            onChange={(e) => update({ ...current, expectRain: e.target.checked })}
+          />
+          <span>{t("expectRain")}</span>
         </label>
-        <input
-          id={`packing-add-${listId}`}
-          className={ui.input}
-          value={draft}
-          maxLength={MAX_CUSTOM_LENGTH}
-          placeholder={t("customPlaceholder")}
-          onChange={(e) => setDraft(e.target.value)}
-        />
-        <button type="submit" className={ui.soft} disabled={!draft.trim() || current.custom.length >= MAX_CUSTOM_ITEMS}>
-          {t("add")}
-        </button>
-      </form>
-      <p className={ui.hint} style={{ margin: 0 }}>
-        {t(owner ? "storageMember" : "storageGuest")}
-      </p>
+        {visible.map((g) => (
+          <div key={g.group}>
+            <h3 className={s.groupTitle}>{t(`groups.${g.group}`)}</h3>
+            <ul className={s.items}>{g.items.map((x) => row(x.id, t(`items.${x.labelKey}`), () => remove(x.id)))}</ul>
+          </div>
+        ))}
+        {current.custom.length > 0 && (
+          <div>
+            <h3 className={s.groupTitle}>{t("groups.custom")}</h3>
+            <ul className={s.items}>{current.custom.map((x) => row(x.id, x.label, () => removeCustom(x.id)))}</ul>
+          </div>
+        )}
+        {current.removed.length > 0 && (
+          <button
+            type="button"
+            className={ui.soft}
+            style={{ justifySelf: "start" }}
+            onClick={() => update({ ...current, removed: [] })}
+          >
+            {t("restore", { n: current.removed.length })}
+          </button>
+        )}
+        <form className={s.addForm} onSubmit={add}>
+          <label className="visually-hidden" htmlFor={`packing-add-${listId}`}>
+            {t("customLabel")}
+          </label>
+          <input
+            id={`packing-add-${listId}`}
+            className={ui.input}
+            value={draft}
+            maxLength={MAX_CUSTOM_LENGTH}
+            placeholder={t("customPlaceholder")}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <button type="submit" className={ui.soft} disabled={!draft.trim() || current.custom.length >= MAX_CUSTOM_ITEMS}>
+            {t("add")}
+          </button>
+        </form>
+        <p className={ui.hint} style={{ margin: 0 }}>
+          {t(owner ? "storageMember" : "storageGuest")}
+        </p>
+      </div>
     </section>
   );
 }

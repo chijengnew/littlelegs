@@ -1,0 +1,31 @@
+.tile {
+  --art-accent: var(--orange-500);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-md);
+  background: var(--paper-100);
+}
+.tile[data-tone] {
+  --art-accent: oklch(0.72 0.13 var(--h));
+  background: oklch(var(--l) 0.045 var(--h));
+}
+
+.svg {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+
+@media (max-width: 479px) {
+  .tile {
+    width: 52px;
+    height: 52px;
+  }
+  .svg {
+    width: 36px;
+    height: 36px;
+  }
+}

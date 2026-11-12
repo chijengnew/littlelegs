@@ -24,9 +24,10 @@ from app.api.v1.saved import (
     parse_path_id,
     place_names,
     recheck,
+    stop_previews,
     stops_out,
 )
-from app.db.models import Favorite
+from app.db.models import Favorite, FavoriteStop
 from app.domain.schemas import FavoriteIn
 from app.services import deletion
 from app.services import favorites as fav_svc
@@ -99,7 +100,9 @@ async def list_favorites(
 ) -> dict:
     rows, nxt = await fav_svc.list_favorites(st.factory, user.id, cursor, limit_)
     names = await place_names(st, [f.conditions for f in rows])
-    return {"items": [await _item(st, f, names=names) for f in rows], "next_cursor": nxt}
+    previews = await stop_previews(st, FavoriteStop, "favorite_id", [f.id for f in rows])
+    items = [await _item(st, f, names=names) | {"stop_previews": previews.get(f.id, [])} for f in rows]
+    return {"items": items, "next_cursor": nxt}
 
 
 @router.get("/{favorite_id}", response_model=FavoriteItem, dependencies=GENERAL, responses=FAVORITE_NOT_FOUND)

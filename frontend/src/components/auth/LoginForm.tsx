@@ -9,6 +9,8 @@ import { getFirebaseAuth } from "@/lib/firebaseClient";
 import GoogleButton from "./GoogleButton";
 import SignOutButton from "./SignOutButton";
 import { useAuthPage } from "./useAuthPage";
+import PasswordInput from "./PasswordInput";
+import { legalLinks } from "./legalLinks";
 import ui from "../ui.module.css";
 import s from "./auth.module.css";
 
@@ -68,7 +70,6 @@ export default function LoginForm() {
     <div className={s.wrap}>
       <section className={ui.card}>
         <h1 className={s.title}>{t("auth.loginTitle")}</h1>
-        <p className={s.lead}>{t("auth.loginDescription")}</p>
         {auth.user && auth.error && (
           <div className={ui.bannerError} role="alert" style={{ marginTop: 16 }}>
             <div>
@@ -81,6 +82,13 @@ export default function LoginForm() {
             </div>
           </div>
         )}
+        <div className={s.google}>
+          <GoogleButton disabled={waiting} onBusy={setGoogleBusy} />
+          <p className={s.terms}>
+            {t.rich("auth.loginTerms", legalLinks)}
+          </p>
+        </div>
+        <p className={s.or}>{t("auth.or")}</p>
         <form onSubmit={submit} className={s.form} noValidate>
           <div>
             <label htmlFor="login-email" className={ui.label}>{t("auth.email")}</label>
@@ -89,22 +97,19 @@ export default function LoginForm() {
           </div>
           <div>
             <label htmlFor="login-password" className={ui.label}>{t("auth.password")}</label>
-            <input id="login-password" className={ui.input} type="password" autoComplete="current-password" required
+            <PasswordInput id="login-password" autoComplete="current-password" required
               value={password} onChange={(e) => setPassword(e.target.value)} disabled={waiting} />
+            <p className={s.forgot}>
+              <Link href={withNext("/forgot-password", next)}>{t("auth.forgot")}</Link>
+            </p>
           </div>
           {error && <p className={ui.error} role="alert">{error}</p>}
           <button className={`${ui.primary} ${ui.block}`} type="submit" disabled={waiting} aria-busy={busy}>
             {busy || (auth.user && auth.pending) ? t("auth.verifying") : t("auth.submit")}
           </button>
         </form>
-        <p className={s.or}>{t("auth.or")}</p>
-        <GoogleButton disabled={waiting} onBusy={setGoogleBusy} />
-        <div className={s.links}>
-          <Link href={withNext("/forgot-password", next)}>{t("auth.forgot")}</Link>
-          <span>{t("auth.noAccount")} <Link href={withNext("/register", next)}>{t("auth.toRegister")}</Link></span>
-        </div>
-        <p className={ui.hint} style={{ marginTop: 16 }}>
-          {t("auth.privacyNotice")} <Link href="/privacy">{t("app.privacy")}</Link> · <Link href="/terms">{t("app.terms")}</Link>
+        <p className={s.switch}>
+          {t("auth.noAccount")} <Link href={withNext("/register", next)}>{t("auth.toRegister")}</Link>
         </p>
       </section>
     </div>

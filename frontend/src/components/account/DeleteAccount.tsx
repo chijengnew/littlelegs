@@ -9,8 +9,8 @@ import { authErrorKey, firebaseErrorCode, safeErrorCode } from "@/lib/authFlow";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { clearFlow } from "@/lib/flowStorage";
 import { uuidv7 } from "@/lib/ids";
+import PasswordInput from "../auth/PasswordInput";
 import ui from "../ui.module.css";
-import a from "../auth/auth.module.css";
 import s from "./account.module.css";
 
 const keyName = (uid: string) => `littlelegs:delete-account:${uid}`;
@@ -42,6 +42,8 @@ export default function DeleteAccount() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lock = useRef(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const cancel = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -95,51 +97,91 @@ export default function DeleteAccount() {
     }
   }
 
-  function submitPassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (password) run("password");
-  }
-
   const hasPassword = providers?.includes("password") ?? false;
   const hasGoogle = providers?.includes("google.com") ?? false;
 
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (hasPassword) {
+      if (password) run("password");
+    } else if (hasGoogle) run("google");
+  }
+
+  function openDialog() {
+    setOpen(true);
+    dialog.current?.showModal();
+    cancel.current?.focus();
+  }
+
+  function reset() {
+    setOpen(false);
+    setAck(false);
+    setPassword("");
+    setError(null);
+  }
+
+  const method = hasPassword ? "password" : "google";
+  const ready = ack && !busy && (method === "google" || Boolean(password));
+
   return (
-    <section className={`${ui.card} ${s.section}`} aria-labelledby="delete-account">
-      <h2 className={ui.cardTitle} id="delete-account">{t("deleteAccount.title")}</h2>
-      <p className={ui.hint} style={{ marginTop: 0 }}>{t("deleteAccount.intro")}</p>
-      {!open ? (
-        <button type="button" className={ui.secondary} onClick={() => setOpen(true)}>{t("deleteAccount.start")}</button>
-      ) : (
-        <div className={a.form} style={{ marginTop: 0 }}>
-          <label className={a.links} style={{ justifyContent: "flex-start", gap: 8 }}>
+    <section className={`${ui.card} ${s.danger}`} aria-labelledby="delete-account">
+      <h2 className={`${ui.cardTitle} ${s.dangerTitle}`} id="delete-account">{t("deleteAccount.title")}</h2>
+      <p className={s.dangerIntro}>{t("deleteAccount.intro")}</p>
+      <button type="button" className={ui.dangerOutline} onClick={openDialog} aria-haspopup="dialog">
+        {t("deleteAccount.start")}
+      </button>
+
+      <dialog
+        ref={dialog}
+        className={s.dialog}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-list"
+        onCancel={(e) => {
+          if (busy) e.preventDefault();
+        }}
+        onClose={reset}
+      >
+        <form className={s.dialogBody} onSubmit={submit} noValidate>
+          <h2 className={s.dialogTitle} id="delete-dialog-title">{t("deleteAccount.dialogTitle")}</h2>
+          <div id="delete-dialog-list" className={s.dialogList}>
+            <p>{t("deleteAccount.listTitle")}</p>
+            <ul>
+              <li>{t("deleteAccount.listAccount")}</li>
+              <li>{t("deleteAccount.listSaved")}</li>
+              <li>{t("deleteAccount.listPlaces")}</li>
+            </ul>
+          </div>
+          <label className={s.ack}>
             <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} disabled={busy} />
             {t("deleteAccount.ack")}
           </label>
-          <p className={ui.hint} style={{ margin: 0 }}>{t("deleteAccount.reauthHint")}</p>
-          {hasPassword && (
-            <form onSubmit={submitPassword} className={a.form} style={{ marginTop: 0 }} noValidate>
-              <div>
-                <label htmlFor="delete-password" className={ui.label}>{t("deleteAccount.password")}</label>
-                <input id="delete-password" className={ui.input} type="password" autoComplete="current-password"
-                  value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy || !ack} />
-              </div>
-              <button type="submit" className={ui.danger} disabled={busy || !ack || !password} aria-busy={busy}>
-                {busy ? t("deleteAccount.deleting") : t("deleteAccount.submitPassword")}
-              </button>
-            </form>
+          {open && providers === null && <p className={ui.hint} role="status">{t("deleteAccount.loadingMethods")}</p>}
+          {providers !== null && (
+            <p className={ui.hint} style={{ margin: 0 }}>{t(method === "password" ? "deleteAccount.reauthHint" : "deleteAccount.googleHint")}</p>
           )}
-          {hasGoogle && (
-            <button type="button" className={ui.danger} onClick={() => run("google")} disabled={busy || !ack} aria-busy={busy}>
-              {busy ? t("deleteAccount.deleting") : t("deleteAccount.submitGoogle")}
-            </button>
+          {hasPassword && (
+            <div>
+              <label htmlFor="delete-password" className={ui.label}>{t("deleteAccount.password")}</label>
+              <PasswordInput id="delete-password" autoComplete="current-password"
+                value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy || !ack} />
+            </div>
           )}
           {error && <p className={ui.error} role="alert">{error}</p>}
-          <button type="button" className={ui.soft} onClick={() => { setOpen(false); setAck(false); setError(null); }} disabled={busy}
-            style={{ justifySelf: "start" }}>
-            {t("deleteAccount.cancel")}
-          </button>
-        </div>
-      )}
+          <div className={s.dialogActions}>
+            <button ref={cancel} type="button" className={ui.secondary} onClick={() => dialog.current?.close()} disabled={busy}>
+              {t("deleteAccount.cancel")}
+            </button>
+            <button type="submit" className={ui.danger} disabled={!ready || providers === null} aria-busy={busy}>
+              {busy ? t("deleteAccount.deleting") : t("deleteAccount.submit")}
+            </button>
+          </div>
+          {hasPassword && hasGoogle && (
+            <button type="button" className={`${ui.navLink} ${s.dialogAlt}`} onClick={() => run("google")} disabled={busy || !ack}>
+              {t("deleteAccount.useGoogle")}
+            </button>
+          )}
+        </form>
+      </dialog>
     </section>
   );
 }

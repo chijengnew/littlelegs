@@ -6,16 +6,16 @@ export default async function SiteFooter() {
   const t = await getTranslations("app");
   return (
     <footer className={s.footer}>
-      <p>{t("footerNote")}</p>
-      <p className={s.links}>
-        <Link href="/privacy">{t("privacy")}</Link>
-        <span aria-hidden="true">·</span>
-        <Link href="/terms">{t("terms")}</Link>
-        <span aria-hidden="true">·</span>
-        <Link href="/feedback?from=footer">{t("feedback")}</Link>
-        <span aria-hidden="true">·</span>
-        <span>© Littlelegs</span>
-      </p>
+      <div className={s.inner}>
+        <p className={s.copy}>© LittleLegs</p>
+        <nav className={s.nav} aria-label={t("footerNav")}>
+          <ul className={s.links}>
+            <li><Link href="/privacy">{t("privacy")}</Link></li>
+            <li><Link href="/terms">{t("terms")}</Link></li>
+            <li><Link href="/feedback?from=footer">{t("feedback")}</Link></li>
+          </ul>
+        </nav>
+      </div>
     </footer>
   );
 }
