@@ -24,17 +24,30 @@ export default function LoginForm() {
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const lock = useRef(false);
   const waiting = busy || googleBusy || auth.pending;
+
+  function clearFieldError(field: "email" | "password") {
+    setFieldErrors((f) => (f[field] ? { ...f, [field]: undefined } : f));
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (lock.current || waiting) return;
     const parsed = schema.safeParse({ email: email.trim(), password });
     if (!parsed.success) {
-      setError(t(parsed.error.issues[0].path[0] === "email" ? "auth.invalidEmailForm" : "auth.passwordRequired"));
+      const fields = new Set(parsed.error.issues.map((i) => i.path[0]));
+      const found = {
+        email: fields.has("email") ? t("auth.invalidEmailForm") : undefined,
+        password: fields.has("password") ? t("auth.passwordRequired") : undefined,
+      };
+      setFieldErrors(found);
+      setError(null);
+      document.getElementById(found.email ? "login-email" : "login-password")?.focus();
       return;
     }
+    setFieldErrors({});
     lock.current = true;
     setBusy(true);
     setError(null);
@@ -93,12 +106,16 @@ export default function LoginForm() {
           <div>
             <label htmlFor="login-email" className={ui.label}>{t("auth.email")}</label>
             <input id="login-email" className={ui.input} type="email" autoComplete="username" required autoFocus
-              value={email} onChange={(e) => setEmail(e.target.value)} disabled={waiting} />
+              aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "login-email-error" : undefined}
+              value={email} onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }} disabled={waiting} />
+            {fieldErrors.email && <p id="login-email-error" className={ui.error}>{fieldErrors.email}</p>}
           </div>
           <div>
             <label htmlFor="login-password" className={ui.label}>{t("auth.password")}</label>
             <PasswordInput id="login-password" autoComplete="current-password" required
-              value={password} onChange={(e) => setPassword(e.target.value)} disabled={waiting} />
+              aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
+              value={password} onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }} disabled={waiting} />
+            {fieldErrors.password && <p id="login-password-error" className={ui.error}>{fieldErrors.password}</p>}
             <p className={s.forgot}>
               <Link href={withNext("/forgot-password", next)}>{t("auth.forgot")}</Link>
             </p>

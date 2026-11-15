@@ -300,6 +300,12 @@
   font-size: var(--fs-sm);
 }
 
+.passwordHint.passwordHint {
+  justify-self: end;
+  margin: 0 0 calc(var(--space-2) * -1);
+  text-align: right;
+}
+
 
 .back {
   margin: 0 0 var(--space-2) calc(var(--space-3) * -1);

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import messages from "../../messages/zh-TW.json";
 import {
   clampConditionStep, fieldFromLoc, firstStepWithError, initialForm, stepErrors, toConditions, validateForm, type FormState,
 } from "./form";
@@ -62,14 +63,29 @@ describe("validateForm", () => {
     expect(validateForm(valid({ endSame: false, end: null }), NOW).end).toBe("validation.end");
   });
 
-  test("午睡須開始早於結束且位於行程內", () => {
-    expect(validateForm(valid({ nap: { enabled: true, start: "13:00", end: "13:00" } }), NOW).nap).toBe("validation.window");
-    expect(validateForm(valid({ nap: { enabled: true, start: "08:00", end: "09:30" } }), NOW).nap).toBe("validation.window");
+  test("午睡：結束不晚於開始、超出行程分開提示", () => {
+    expect(validateForm(valid({ nap: { enabled: true, start: "13:00", end: "13:00" } }), NOW).nap).toBe("validation.napOrder");
+    expect(validateForm(valid({ nap: { enabled: true, start: "14:00", end: "13:00" } }), NOW).nap).toBe("validation.napOrder");
+    expect(validateForm(valid({ nap: { enabled: true, start: "08:00", end: "09:30" } }), NOW).nap).toBe("validation.napRange");
+    expect(validateForm(valid({ nap: { enabled: true, start: "16:30", end: "17:30" } }), NOW).nap).toBe("validation.napRange");
+    expect(validateForm(valid({ nap: { enabled: true, start: "13:00", end: "14:30" } }), NOW).nap).toBeUndefined();
   });
 
-  test("用餐時段至少 60 分鐘且位於行程內", () => {
-    expect(validateForm(valid({ lunch: { enabled: true, start: "11:30", end: "12:15" } }), NOW).lunch).toBe("validation.meal");
-    expect(validateForm(valid({ dinner: { enabled: true, start: "17:30", end: "19:00" } }), NOW).dinner).toBe("validation.meal");
+  test("用餐：不足 1 小時、超出行程分開提示", () => {
+    expect(validateForm(valid({ lunch: { enabled: true, start: "11:30", end: "12:15" } }), NOW).lunch).toBe("validation.mealLength");
+    expect(validateForm(valid({ lunch: { enabled: true, start: "13:00", end: "11:30" } }), NOW).lunch).toBe("validation.mealLength");
+    expect(validateForm(valid({ dinner: { enabled: true, start: "17:30", end: "19:00" } }), NOW).dinner).toBe("validation.mealRange");
+    expect(validateForm(valid({ lunch: { enabled: true, start: "08:00", end: "09:30" } }), NOW).lunch).toBe("validation.mealRange");
+    expect(validateForm(valid({ lunch: { enabled: true, start: "11:30", end: "13:00" } }), NOW).lunch).toBeUndefined();
+  });
+
+  test("每個檢查結果都有對應的提示文字", () => {
+    const keys = [
+      "date", "quarter", "returnGap", "departPast", "children", "start", "end", "napOrder", "napRange", "mealLength", "mealRange",
+    ];
+    for (const k of keys) expect(messages.validation).toHaveProperty(k);
+    expect(messages.validation).not.toHaveProperty("window");
+    expect(messages.validation).not.toHaveProperty("meal");
   });
 });
 

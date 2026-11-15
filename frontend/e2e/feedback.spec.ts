@@ -12,14 +12,14 @@ test("頁尾進入回饋頁：訪客可送出，只帶固定的來源類型", as
   await page.getByRole("button", { name: "送出回饋" }).click();
   await expect(page.getByText("請填寫內容")).toBeVisible();
   await page.getByLabel("內容").fill("  排行程很方便  ");
-  await page.getByLabel("聯絡信箱").fill("not-an-email");
+  await page.getByLabel("電子郵件").fill("not-an-email");
   await page.getByRole("button", { name: "送出回饋" }).click();
-  await expect(page.getByText("聯絡信箱格式不正確")).toBeVisible();
+  await expect(page.getByText("電子郵件格式不正確")).toBeVisible();
   expect(api.called("/v1/feedback")).toHaveLength(0);
 
   await page.getByLabel("回饋類型").selectOption("suggestion");
   await page.getByLabel("滿意度").selectOption("5");
-  await page.getByLabel("聯絡信箱").fill("a@example.com");
+  await page.getByLabel("電子郵件").fill("a@example.com");
   await page.getByRole("button", { name: "送出回饋" }).click();
   await expect(page.getByText("已收到您的回饋，謝謝！")).toBeVisible();
   expect(api.called("/v1/feedback")[0].body).toEqual({

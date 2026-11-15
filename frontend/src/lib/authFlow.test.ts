@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
-  authErrorKey, nextFromContinueUrl, safeErrorCode, safeNext, shouldUseRedirect, unverifiedRedirect, withNext,
+  authErrorKey, nextFromContinueUrl, reauthErrorKey, safeErrorCode, safeNext, shouldUseRedirect, unverifiedRedirect, withNext,
 } from "./authFlow";
 
 describe("safeNext", () => {
@@ -62,6 +62,14 @@ describe("Firebase 錯誤", () => {
     expect(authErrorKey("auth/expired-action-code")).toBe("auth.errors.expiredLink");
     expect(authErrorKey("auth/something-new")).toBeNull();
     expect(authErrorKey(undefined)).toBeNull();
+  });
+
+  test("重新驗證身分時只輸入密碼，密碼錯誤改說目前的密碼不正確", () => {
+    expect(reauthErrorKey("auth/invalid-credential")).toBe("auth.errors.wrongCurrentPassword");
+    expect(reauthErrorKey("auth/wrong-password")).toBe("auth.errors.wrongCurrentPassword");
+    expect(reauthErrorKey("auth/user-mismatch")).toBe("auth.errors.userMismatch");
+    expect(reauthErrorKey("auth/too-many-requests")).toBe("auth.errors.tooMany");
+    expect(reauthErrorKey("auth/something-new")).toBeNull();
   });
 
   test("彈出視窗被擋時改用頁面導向", () => {

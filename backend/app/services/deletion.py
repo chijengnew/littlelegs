@@ -2,7 +2,8 @@
 
 - 意圖寫入明確失敗：回錯誤、未接受。結果不明：沿用同一 operation_id 查核／重試，不告知可安全取消。
 - 意圖寫入成功即接受且必須完成：立即嘗試處理；失敗交由 systemd timer 每分鐘的工作依外部意圖恢復。
-- 刪帳：auth_time ≤ 5 分鐘＋check_revoked；順序：意圖 → 本地 deleting → 刪 Firebase（已不存在視為成功）
+- 刪帳：auth_time ≤ 5 分鐘（另容許 Token 時鐘誤差 TOKEN_CLOCK_SKEW_S 秒）＋check_revoked；
+  順序：意圖 → 本地 deleting → 刪 Firebase（已不存在視為成功）
   → 刪 MySQL 會員與所有關聯資料（含 UID 限流列）→ 完成標記。不保留 MySQL 會員 tombstone。
   Email 未驗證（沒有本地會員）的帳號不走這裡，改由 registration.cancel_registration「取消註冊」。
 - 單筆刪除（歷史／收藏／到訪紀錄）：保留窗口內最小防重送狀態；清除不再被本人其他紀錄引用的私人端點。
@@ -31,6 +32,7 @@ from app.db.models import (
 )
 from app.errors import ApiError
 from app.ratelimit import delete_uid_counters
+from app.security.firebase import TOKEN_CLOCK_SKEW_S
 from app.services.check_ins import delete_check_in_rows
 from app.services.history import delete_history_rows
 from app.services.intents import DeletionIntent, IntentWriteFailed, IntentWriteUnknown
@@ -189,7 +191,7 @@ async def request_account_deletion(st: AppState, token: str, operation_id: uuid.
     """不經一般會員依賴：deleting 狀態的會員仍須能以同一 operation_id 重試／查核。"""
     claims = await st.verifier.verify_id_token(token, check_revoked=True)
     now_s = int(st.clock().timestamp())
-    if claims.auth_time is None or now_s - int(claims.auth_time) > REAUTH_WINDOW_S:
+    if claims.auth_time is None or now_s - int(claims.auth_time) > REAUTH_WINDOW_S + TOKEN_CLOCK_SKEW_S:
         raise ApiError(401, "REAUTH_REQUIRED", "請重新登入後 5 分鐘內再刪除帳號")
     async with st.factory() as s:
         user_id = (await s.execute(select(User.id).where(User.firebase_uid == claims.uid))).scalar()

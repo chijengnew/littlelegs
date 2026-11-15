@@ -24,7 +24,7 @@ test("已驗證會員：收藏行程 → 會員頁收藏列表 → 詳細頁 →
   await expect(page.getByRole("heading", { name: "時間軸" })).toBeVisible({ timeout: 30_000 });
 
   await page.getByRole("button", { name: /收藏行程/ }).click();
-  const confirm = page.getByRole("button", { name: "仍要保存" });
+  const confirm = page.getByRole("button", { name: "仍要收藏" });
   if (await confirm.isVisible().catch(() => false)) await confirm.click();
   await expect(page.getByText(/已收藏/)).toBeVisible({ timeout: 15_000 });
 

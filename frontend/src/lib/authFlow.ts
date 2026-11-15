@@ -71,6 +71,11 @@ export function authErrorKey(code: string | undefined): string | null {
   return code && MESSAGES[code] ? `auth.errors.${MESSAGES[code]}` : null;
 }
 
+export function reauthErrorKey(code: string | undefined): string | null {
+  const key = authErrorKey(code);
+  return key === "auth.errors.invalidCredentials" ? "auth.errors.wrongCurrentPassword" : key;
+}
+
 export function shouldUseRedirect(code: string | undefined): boolean {
   return code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-environment";
 }

@@ -45,7 +45,7 @@ export default async function TermsPage() {
         </p>
         <h2>Google 服務</h2>
         <p>
-          本服務使用 Google 的地點建議、地圖、路線與天氣功能。使用這些功能時，您也須遵守{" "}
+          本服務使用 Google 的地點建議、地圖、路線與天氣功能。使用這些功能時，也請遵守{" "}
           <External href="https://maps.google.com/help/terms_maps/">
             {keep("Google 地圖／")}
             {keep("Google 地球附加服務條款")}

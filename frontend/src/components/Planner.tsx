@@ -73,15 +73,16 @@ export default function Planner() {
     { key: "plan", label: t("steps.plan") },
   ];
   const current = steps.findIndex((x) => x.key === step);
+  const narrow = step === "conditions" ? s.formWidth : "";
 
   return (
     <div className={s.wrap}>
-      {!API_CONFIGURED && <p className={ui.bannerWarn} role="status">{t("errors.notConnected")}</p>}
-      {auth.error && <p className={ui.bannerInfo} role="status">{t("auth.waitForVerification")}</p>}
+      {!API_CONFIGURED && <p className={`${ui.bannerWarn} ${narrow}`} role="status">{t("errors.notConnected")}</p>}
+      {auth.error && <p className={`${ui.bannerInfo} ${narrow}`} role="status">{t("auth.waitForVerification")}</p>}
       <p className="visually-hidden" role="status">
         {importing ? t("auth.importing") : resuming ? t("candidates.resuming") : ""}
       </p>
-      {importError && <div className={ui.bannerError} role="alert"><span>{importError.message}</span>
+      {importError && <div className={`${ui.bannerError} ${narrow}`} role="alert"><span>{importError.message}</span>
         <button type="button" className={ui.soft} onClick={clearImportError}>{t("errors.retry")}</button>
         <button type="button" className={ui.soft} onClick={resetAll}>{t("auth.newQuery")}</button></div>}
       <fieldset disabled={!auth.ready || busy || importing} className={s.flow}>
@@ -104,21 +105,11 @@ export default function Planner() {
         {steps.find((x) => x.key === step)?.label}
       </h1>
 
-      <div aria-live="assertive">
+      <div aria-live="assertive" className={narrow || undefined}>
         {apiError && (
           <div className={ui.bannerError} role="alert">
             <span aria-hidden="true">!</span>
-            <div>
-              <div>{apiError.message}</div>
-              {apiError.fieldErrors.length > 0 && (
-                <ul className={s.errList}>
-                  {apiError.fieldErrors.map((e, i) => (
-                    <li key={i}>{e.msg}</li>
-                  ))}
-                </ul>
-              )}
-              {apiError.traceId && <div className={s.trace}>{t("errors.traceId", { id: apiError.traceId })}</div>}
-            </div>
+            <div>{apiError.message}</div>
           </div>
         )}
       </div>

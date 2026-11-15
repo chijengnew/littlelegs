@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { z } from "zod";
-import { PASSWORD_MAX, PASSWORD_MIN, authErrorKey, firebaseErrorCode, safeErrorCode } from "@/lib/authFlow";
+import { PASSWORD_MAX, PASSWORD_MIN, authErrorKey, firebaseErrorCode, reauthErrorKey, safeErrorCode } from "@/lib/authFlow";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { useAuth } from "../AuthProvider";
 import DeleteAccount from "../account/DeleteAccount";
@@ -71,7 +71,12 @@ function AccountTab() {
   const [fresh, setFresh] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ add?: string; current?: string; fresh?: string }>({});
   const lock = useRef(false);
+
+  function clearFieldError(field: "add" | "current" | "fresh") {
+    setFieldErrors((f) => (f[field] ? { ...f, [field]: undefined } : f));
+  }
 
   async function readProfile(): Promise<Profile | null> {
     const user = (await getFirebaseAuth()).currentUser;
@@ -88,12 +93,15 @@ function AccountTab() {
     event.preventDefault();
     if (lock.current || busy) return;
     const parsed = z
-      .object({ password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX) })
+      .object({ password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX, t("auth.passwordTooLong")) })
       .safeParse({ password });
     if (!parsed.success) {
-      setNotice({ ok: false, text: parsed.error.issues[0].message });
+      setFieldErrors({ add: parsed.error.issues[0].message });
+      setNotice(null);
+      document.getElementById("add-password")?.focus();
       return;
     }
+    setFieldErrors({});
     lock.current = true;
     setBusy(true);
     setNotice(null);
@@ -123,15 +131,18 @@ function AccountTab() {
   async function changePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (lock.current || busy) return;
-    if (!current) {
-      setNotice({ ok: false, text: t("auth.passwordRequired") });
+    const parsed = z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX, t("auth.passwordTooLong")).safeParse(fresh);
+    if (!current || !parsed.success) {
+      const found = {
+        current: current ? undefined : t("auth.passwordRequired"),
+        fresh: parsed.success ? undefined : parsed.error.issues[0].message,
+      };
+      setFieldErrors(found);
+      setNotice(null);
+      document.getElementById(found.current ? "current-password" : "change-new-password")?.focus();
       return;
     }
-    const parsed = z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX).safeParse(fresh);
-    if (!parsed.success) {
-      setNotice({ ok: false, text: parsed.error.issues[0].message });
-      return;
-    }
+    setFieldErrors({});
     lock.current = true;
     setBusy(true);
     setNotice(null);
@@ -149,7 +160,7 @@ function AccountTab() {
       setChanging(false);
       setNotice({ ok: true, text: t("auth.passwordChanged") });
     } catch (e) {
-      const key = authErrorKey(firebaseErrorCode(e));
+      const key = reauthErrorKey(firebaseErrorCode(e));
       setNotice({ ok: false, text: key ? t(key) : `${t("auth.loginFailed")} ${t("auth.errorCode", { code: safeErrorCode(e, stage) })}` });
     } finally {
       setCurrent("");
@@ -164,6 +175,7 @@ function AccountTab() {
     setCurrent("");
     setFresh("");
     setNotice(null);
+    setFieldErrors({});
   }
 
   const hasPassword = profile?.providers.includes("password") ?? false;
@@ -207,14 +219,19 @@ function AccountTab() {
           <div>
             <label htmlFor="current-password" className={ui.label}>{t("auth.currentPassword")}</label>
             <PasswordInput id="current-password" autoComplete="current-password" required autoFocus
-              value={current} onChange={(e) => setCurrent(e.target.value)} disabled={busy} />
+              aria-invalid={Boolean(fieldErrors.current)} aria-describedby={fieldErrors.current ? "current-password-error" : undefined}
+              value={current} onChange={(e) => { setCurrent(e.target.value); clearFieldError("current"); }} disabled={busy} />
+            {fieldErrors.current && <p className={ui.error} id="current-password-error">{fieldErrors.current}</p>}
           </div>
           <div>
             <label htmlFor="change-new-password" className={ui.label}>{t("auth.newPassword")}</label>
             <PasswordInput id="change-new-password" autoComplete="new-password" required
-              minLength={PASSWORD_MIN} aria-describedby="change-password-hint"
-              value={fresh} onChange={(e) => setFresh(e.target.value)} disabled={busy} />
-            <p className={ui.hint} id="change-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>
+              minLength={PASSWORD_MIN} aria-invalid={Boolean(fieldErrors.fresh)}
+              aria-describedby={fieldErrors.fresh ? "change-password-error" : "change-password-hint"}
+              value={fresh} onChange={(e) => { setFresh(e.target.value); clearFieldError("fresh"); }} disabled={busy} />
+            {fieldErrors.fresh
+              ? <p className={ui.error} id="change-password-error">{fieldErrors.fresh}</p>
+              : <p className={ui.hint} id="change-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>}
           </div>
           <div className={s.formActions}>
             <button type="button" className={ui.secondary} onClick={toggleChange} disabled={busy}>{t("auth.cancel")}</button>
@@ -232,9 +249,12 @@ function AccountTab() {
           <div>
             <label htmlFor="add-password" className={ui.label}>{t("auth.newPassword")}</label>
             <PasswordInput id="add-password" autoComplete="new-password" required
-              minLength={PASSWORD_MIN} aria-describedby="add-password-hint"
-              value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy} />
-            <p className={ui.hint} id="add-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>
+              minLength={PASSWORD_MIN} aria-invalid={Boolean(fieldErrors.add)}
+              aria-describedby={fieldErrors.add ? "add-password-error" : "add-password-hint"}
+              value={password} onChange={(e) => { setPassword(e.target.value); clearFieldError("add"); }} disabled={busy} />
+            {fieldErrors.add
+              ? <p className={ui.error} id="add-password-error">{fieldErrors.add}</p>
+              : <p className={ui.hint} id="add-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>}
           </div>
           <button className={ui.primary} type="submit" disabled={busy} aria-busy={busy}>
             {busy ? t("auth.submitting") : t("auth.addPasswordSubmit")}

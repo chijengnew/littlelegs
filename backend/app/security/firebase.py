@@ -3,6 +3,8 @@
 - 身分只取自驗證成功的 Token，不信任前端傳入的 uid。
 - 撤銷檢查（check_revoked=True）會發網路請求：以受限執行緒池執行並設逾時，不阻塞事件迴圈。
 - 建立本地會員與敏感操作一律 check_revoked=True；刪帳另要求 auth_time 在 5 分鐘內。
+- ID Token 的簽發與到期時間容許 TOKEN_CLOCK_SKEW_S 秒時鐘誤差，主機時鐘稍有偏差時不拒絕剛換發的 Token；
+  刪帳的 5 分鐘窗口同樣加上這段誤差。
 - 取消註冊與清理逾期未驗證帳號以 Admin 讀取帳號目前狀態（AccountInfo），不依 Token 內的 email_verified。
 - App Check 與 Auth 分開驗證，互不取代；一般驗證不是一次性防重放。
 """
@@ -18,6 +20,8 @@ from typing import Protocol
 import anyio
 
 from app.errors import ApiError
+
+TOKEN_CLOCK_SKEW_S = 10
 
 
 @dataclass(frozen=True)
@@ -105,7 +109,7 @@ class FirebaseVerifier:
         from firebase_admin import auth
 
         try:
-            claims = await _run_sync(auth.verify_id_token, token, None, check_revoked)
+            claims = await _run_sync(auth.verify_id_token, token, None, check_revoked, TOKEN_CLOCK_SKEW_S)
         except auth.ExpiredIdTokenError as e:
             raise ApiError(401, "AUTH_TOKEN_EXPIRED", "登入憑證已過期") from e
         except (auth.RevokedIdTokenError, auth.UserDisabledError) as e:

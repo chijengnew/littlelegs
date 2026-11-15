@@ -16,7 +16,7 @@ test("未驗證帳號（註冊未完成）：只能停在驗證頁；登出後�
   test.skip(!unverified.email || !unverified.password, "未設定 E2E_UNVERIFIED_EMAIL／E2E_UNVERIFIED_PASSWORD");
   await login(page, unverified);
   await expect(page).toHaveURL(/\/verify-email/);
-  await expect(page.getByRole("heading", { name: "驗證您的 Email" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "驗證您的電子郵件" })).toBeVisible();
   await expect(page.getByRole("button", { name: "我已完成驗證" })).toBeVisible();
   await expect(page.getByRole("button", { name: "取消註冊" })).toBeVisible();
   await page.goto("/account");
@@ -43,5 +43,5 @@ test("忘記密碼：不論帳號是否存在都顯示相同訊息", async ({ pa
   await page.goto("/forgot-password");
   await page.getByLabel("電子郵件").fill(`${user.split("+")[0]}+e2e-nobody@${domain}`);
   await page.getByRole("button", { name: "寄出重設信" }).click();
-  await expect(page.getByText("如果這個信箱有註冊，幾分鐘內會收到重設密碼的信")).toBeVisible();
+  await expect(page.getByText("如果這個電子郵件有註冊，幾分鐘內會收到重設密碼的信")).toBeVisible();
 });

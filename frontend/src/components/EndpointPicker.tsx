@@ -155,6 +155,7 @@ function PlaceSearch({ onPick }: { onPick: (v: EndpointChoice) => void }) {
 
 function GoogleSearch({ onPick }: { onPick: (v: EndpointChoice) => void }) {
   const t = useTranslations();
+  const ids = useId();
   const [input, setInput] = useState("");
   const [label, setLabel] = useState("");
   const [suggestions, setSuggestions] = useState<Schemas["Suggestion"][]>([]);
@@ -224,24 +225,29 @@ function GoogleSearch({ onPick }: { onPick: (v: EndpointChoice) => void }) {
 
   return (
     <div className={s.stack}>
-      <input
-        className={ui.input}
-        type="search"
-        value={input}
-        onChange={(e) => {
-          setInput(e.target.value);
-          if (e.target.value.trim().length < 2) setSuggestions([]);
-        }}
-        placeholder={t("endpoint.googlePlaceholder")}
-        aria-label={t("endpoint.googlePlaceholder")}
-        autoComplete="off"
-      />
       <div>
-        <label className={ui.hint} htmlFor="ep-label">
+        <input
+          className={ui.input}
+          type="search"
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            if (e.target.value.trim().length < 2) setSuggestions([]);
+          }}
+          placeholder={t("endpoint.googlePlaceholder")}
+          aria-label={t("endpoint.googlePlaceholder")}
+          aria-invalid={Boolean(err)}
+          aria-describedby={err ? `${ids}-error` : undefined}
+          autoComplete="off"
+        />
+        <div aria-live="polite">{err && <p id={`${ids}-error`} className={ui.error}>{err}</p>}</div>
+      </div>
+      <div>
+        <label className={ui.hint} htmlFor={`${ids}-label`}>
           {t("endpoint.labelInput")}
         </label>
         <input
-          id="ep-label"
+          id={`${ids}-label`}
           className={ui.input}
           value={label}
           maxLength={20}
@@ -249,7 +255,6 @@ function GoogleSearch({ onPick }: { onPick: (v: EndpointChoice) => void }) {
           placeholder={t("endpoint.labelPlaceholder")}
         />
       </div>
-      <div aria-live="polite">{err && <p className={ui.error}>{err}</p>}</div>
       {suggestions.length > 0 && (
         <>
           <ul className={s.results}>

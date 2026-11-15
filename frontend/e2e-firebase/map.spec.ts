@@ -21,7 +21,7 @@ test("已驗證會員：候選頁與行程頁顯示 Google 地圖，2 個景點�
   await page.getByRole("button", { name: "搜尋候選景點" }).click();
   const boxes = page.getByRole("checkbox", { name: /^選擇/ });
   await expect(boxes.first()).toBeVisible({ timeout: 30_000 });
-  test.skip(await page.getByText("會員地圖尚未啟用").isVisible(), "未設定 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY／MAP_ID");
+  test.skip((await page.getByRole("region", { name: "地圖" }).count()) === 0, "未設定 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY／MAP_ID");
 
   const map = page.getByRole("region", { name: "地圖" });
   await expect(map).toBeVisible();

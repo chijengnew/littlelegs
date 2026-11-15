@@ -36,6 +36,7 @@ export default function EmailAction() {
   const [next, setNext] = useState("/");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const started = useRef(false);
   const { refresh } = auth;
@@ -70,12 +71,15 @@ export default function EmailAction() {
     event.preventDefault();
     if (busy || !oobCode) return;
     const parsed = z
-      .object({ password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX) })
+      .object({ password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX, t("auth.passwordTooLong")) })
       .safeParse({ password });
     if (!parsed.success) {
-      setFormError(parsed.error.issues[0].message);
+      setFieldError(parsed.error.issues[0].message);
+      setFormError(null);
+      document.getElementById("reset-password")?.focus();
       return;
     }
+    setFieldError(null);
     setBusy(true);
     setFormError(null);
     try {
@@ -116,9 +120,12 @@ export default function EmailAction() {
         <div>
           <label htmlFor="reset-password" className={ui.label}>{t("auth.newPassword")}</label>
           <PasswordInput id="reset-password" autoComplete="new-password" required autoFocus
-            minLength={PASSWORD_MIN} aria-describedby="reset-password-hint"
-            value={password} onChange={(e) => setPassword(e.target.value)} disabled={busy} />
-          <p className={ui.hint} id="reset-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>
+            minLength={PASSWORD_MIN} aria-invalid={Boolean(fieldError)}
+            aria-describedby={fieldError ? "reset-password-error" : "reset-password-hint"}
+            value={password} onChange={(e) => { setPassword(e.target.value); setFieldError(null); }} disabled={busy} />
+          {fieldError
+            ? <p className={ui.error} id="reset-password-error">{fieldError}</p>
+            : <p className={ui.hint} id="reset-password-hint">{t("auth.passwordHint", { min: PASSWORD_MIN })}</p>}
         </div>
         {formError && <p className={ui.error} role="alert">{formError}</p>}
         <button className={`${ui.primary} ${ui.block}`} type="submit" disabled={busy} aria-busy={busy}>

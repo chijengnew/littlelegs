@@ -1,4 +1,4 @@
-"""check_ins、check_in_operations：探險護照的到訪紀錄與蓋章冪等操作
+"""Add Explorer Passport check-ins and idempotent stamp operations
 
 同一會員、同一景點最多一筆到訪紀錄；不保存當次座標、精確度或計算距離。
 操作紀錄不對到訪紀錄設外鍵，刪除後仍保留至操作窗口結束，避免延遲重送讓紀錄復活。

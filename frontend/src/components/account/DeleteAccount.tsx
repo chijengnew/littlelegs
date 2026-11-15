@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api/client";
 import { toUiError } from "@/lib/api/problem";
-import { authErrorKey, firebaseErrorCode, safeErrorCode } from "@/lib/authFlow";
+import { firebaseErrorCode, reauthErrorKey, safeErrorCode } from "@/lib/authFlow";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { clearFlow } from "@/lib/flowStorage";
 import { uuidv7 } from "@/lib/ids";
@@ -88,7 +88,7 @@ export default function DeleteAccount() {
       await fa.signOut(instance).catch(() => {});
       router.replace(data.status === "completed" ? "/account/deleted" : "/account/deleted?status=accepted");
     } catch (e) {
-      const key = authErrorKey(firebaseErrorCode(e));
+      const key = reauthErrorKey(firebaseErrorCode(e));
       setError(key ? t(key) : `${t("deleteAccount.failed")} ${t("auth.errorCode", { code: safeErrorCode(e, stage) })}`);
     } finally {
       setPassword("");
@@ -122,6 +122,7 @@ export default function DeleteAccount() {
 
   const method = hasPassword ? "password" : "google";
   const ready = ack && !busy && (method === "google" || Boolean(password));
+  const needsPassword = providers !== null && ack && method === "password" && !password;
 
   return (
     <section className={`${ui.card} ${s.danger}`} aria-labelledby="delete-account">
@@ -167,11 +168,13 @@ export default function DeleteAccount() {
             </div>
           )}
           {error && <p className={ui.error} role="alert">{error}</p>}
+          {needsPassword && <p id="delete-password-hint" className={`${ui.hint} ${s.passwordHint}`}>{t("deleteAccount.passwordHint")}</p>}
           <div className={s.dialogActions}>
             <button ref={cancel} type="button" className={ui.secondary} onClick={() => dialog.current?.close()} disabled={busy}>
               {t("deleteAccount.cancel")}
             </button>
-            <button type="submit" className={ui.danger} disabled={!ready || providers === null} aria-busy={busy}>
+            <button type="submit" className={ui.danger} disabled={!ready || providers === null} aria-busy={busy}
+              aria-describedby={needsPassword ? "delete-password-hint" : undefined}>
               {busy ? t("deleteAccount.deleting") : t("deleteAccount.submit")}
             </button>
           </div>

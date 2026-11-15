@@ -243,7 +243,7 @@ export default function PlannerProvider({ children }: { children: ReactNode }) {
   }, [cands, blocked, selection.length]);
 
   function applyProblem(ue: UiError) {
-    setApiError(ue);
+    setApiError(ue.code === "DEPARTURE_PASSED" ? null : ue);
     const fe: FormErrors = {};
     for (const e of ue.fieldErrors) {
       const k = fieldFromLoc(e.loc);

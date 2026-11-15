@@ -22,22 +22,35 @@ export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const lock = useRef(false);
   const waiting = busy || googleBusy || auth.pending;
 
   const schema = z.object({
     email: z.email(t("auth.invalidEmailForm")),
-    password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX),
+    password: z.string().min(PASSWORD_MIN, t("auth.passwordTooShort", { min: PASSWORD_MIN })).max(PASSWORD_MAX, t("auth.passwordTooLong")),
   });
+
+  function clearFieldError(field: "email" | "password") {
+    setFieldErrors((f) => (f[field] ? { ...f, [field]: undefined } : f));
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (lock.current || waiting) return;
     const parsed = schema.safeParse({ email: email.trim(), password });
     if (!parsed.success) {
-      setError(parsed.error.issues[0].message);
+      const found: { email?: string; password?: string } = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] === "email" ? "email" : "password";
+        found[field] ??= issue.message;
+      }
+      setFieldErrors(found);
+      setError(null);
+      document.getElementById(found.email ? "reg-email" : "reg-password")?.focus();
       return;
     }
+    setFieldErrors({});
     lock.current = true;
     setBusy(true);
     setError(null);
@@ -101,12 +114,16 @@ export default function RegisterForm() {
           <div>
             <label htmlFor="reg-email" className={ui.label}>{t("auth.email")}</label>
             <input id="reg-email" className={ui.input} type="email" autoComplete="email" required autoFocus
-              value={email} onChange={(e) => setEmail(e.target.value)} disabled={waiting} />
+              aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "reg-email-error" : undefined}
+              value={email} onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }} disabled={waiting} />
+            {fieldErrors.email && <p id="reg-email-error" className={ui.error}>{fieldErrors.email}</p>}
           </div>
           <div>
             <label htmlFor="reg-password" className={ui.label}>{t("auth.password")}</label>
             <PasswordInput id="reg-password" autoComplete="new-password" required minLength={PASSWORD_MIN}
-              value={password} onChange={(e) => setPassword(e.target.value)} disabled={waiting} />
+              aria-invalid={Boolean(fieldErrors.password)} aria-describedby={fieldErrors.password ? "reg-password-error" : undefined}
+              value={password} onChange={(e) => { setPassword(e.target.value); clearFieldError("password"); }} disabled={waiting} />
+            {fieldErrors.password && <p id="reg-password-error" className={ui.error}>{fieldErrors.password}</p>}
           </div>
           {error && <p className={ui.error} role="alert">{error}</p>}
           <p className={ui.hint} style={{ margin: 0 }}>{t("auth.registerDescription")}</p>

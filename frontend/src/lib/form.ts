@@ -120,12 +120,15 @@ export function validateForm(f: FormState, now: Date = new Date()): FormErrors {
   const dep = toMinutes(f.depart_time);
   const ret = toMinutes(f.return_time);
   const inTrip = (w: WindowState) => toMinutes(w.start) >= dep && toMinutes(w.end) <= ret;
-  if (f.nap.enabled && (toMinutes(f.nap.start) >= toMinutes(f.nap.end) || !inTrip(f.nap))) {
-    errors.nap = "validation.window";
+  if (f.nap.enabled) {
+    if (toMinutes(f.nap.start) >= toMinutes(f.nap.end)) errors.nap = "validation.napOrder";
+    else if (!inTrip(f.nap)) errors.nap = "validation.napRange";
   }
   for (const k of ["lunch", "dinner"] as const) {
     const w = f[k];
-    if (w.enabled && (toMinutes(w.end) - toMinutes(w.start) < 60 || !inTrip(w))) errors[k] = "validation.meal";
+    if (!w.enabled) continue;
+    if (toMinutes(w.end) - toMinutes(w.start) < 60) errors[k] = "validation.mealLength";
+    else if (!inTrip(w)) errors[k] = "validation.mealRange";
   }
   return errors;
 }

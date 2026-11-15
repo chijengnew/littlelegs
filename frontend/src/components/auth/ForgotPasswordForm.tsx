@@ -20,6 +20,7 @@ export default function ForgotPasswordForm() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const lock = useRef(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -27,9 +28,12 @@ export default function ForgotPasswordForm() {
     if (lock.current || busy) return;
     const parsed = z.email().safeParse(email.trim());
     if (!parsed.success) {
-      setError(t("auth.invalidEmailForm"));
+      setEmailError(t("auth.invalidEmailForm"));
+      setError(null);
+      document.getElementById("forgot-email")?.focus();
       return;
     }
+    setEmailError(null);
     lock.current = true;
     setBusy(true);
     setError(null);
@@ -77,7 +81,9 @@ export default function ForgotPasswordForm() {
             <div>
               <label htmlFor="forgot-email" className={ui.label}>{t("auth.email")}</label>
               <input id="forgot-email" className={ui.input} type="email" autoComplete="username" required autoFocus
-                value={email} onChange={(e) => setEmail(e.target.value)} disabled={busy} />
+                aria-invalid={Boolean(emailError)} aria-describedby={emailError ? "forgot-email-error" : undefined}
+                value={email} onChange={(e) => { setEmail(e.target.value); setEmailError(null); }} disabled={busy} />
+              {emailError && <p id="forgot-email-error" className={ui.error}>{emailError}</p>}
             </div>
             {error && <p className={ui.error} role="alert">{error}</p>}
             <button className={`${ui.primary} ${ui.block}`} type="submit" disabled={busy} aria-busy={busy}>

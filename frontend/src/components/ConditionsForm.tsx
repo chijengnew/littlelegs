@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
@@ -139,6 +139,8 @@ export default function ConditionsForm({ value: f, onChange, errors, onSubmit, b
                 label={t("form.departTime")}
                 value={f.depart_time}
                 invalid={Boolean(errors.depart_time)}
+                describedBy={errors.depart_time ? "err-depart_time" : undefined}
+                error={err("depart_time")}
                 onChange={(v) => set("depart_time", v)}
               />
               <TimeSelect
@@ -146,11 +148,11 @@ export default function ConditionsForm({ value: f, onChange, errors, onSubmit, b
                 label={t("form.returnTime")}
                 value={f.return_time}
                 invalid={Boolean(errors.return_time)}
+                describedBy={errors.return_time ? "err-return_time" : undefined}
+                error={err("return_time")}
                 onChange={(v) => set("return_time", v)}
               />
             </div>
-            {err("depart_time")}
-            {err("return_time")}
           </>
         )}
 
@@ -374,6 +376,8 @@ function TimeSelect(props: {
   label: string;
   value: string;
   invalid?: boolean;
+  describedBy?: string;
+  error?: ReactNode;
   onChange: (v: string) => void;
   compact?: boolean;
 }) {
@@ -387,6 +391,7 @@ function TimeSelect(props: {
         className={ui.input}
         value={props.value}
         aria-invalid={props.invalid}
+        aria-describedby={props.describedBy}
         onChange={(e) => props.onChange(e.target.value)}
       >
         {timeOptions(props.value).map((x) => (
@@ -395,6 +400,7 @@ function TimeSelect(props: {
           </option>
         ))}
       </select>
+      {props.error}
     </div>
   );
 }
